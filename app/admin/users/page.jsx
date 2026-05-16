@@ -57,7 +57,7 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 import { useAdminUsers } from "@/hooks/useApi";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 // Format number
 function formatNumber(num) {
@@ -110,14 +110,21 @@ function AccountStatusBadge({ isActive }) {
 }
 
 export default function AdminUsersPage() {
+    // 1. FILTER & SEARCH STATE
+    // Manages the current parameters passed to the API query
     const [searchQuery, setSearchQuery] = useState("");
     const [filters, setFilters] = useState({
         kycStatus: "all",
         isActive: "all",
     });
+    
+    // 2. PAGINATION STATE
     const [currentPage, setCurrentPage] = useState(1);
     const perPage = 10;
 
+    // 3. REACT QUERY DATA FETCHING
+    // Automatically re-fetches whenever page, search, or filters change.
+    // Handles caching, loading, and error states seamlessly.
     const { users: apiUsers, pagination, loading, error, refetch } = useAdminUsers({
         page: currentPage,
         limit: perPage,

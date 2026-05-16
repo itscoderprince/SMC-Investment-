@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/middleware/auth';
 import { successResponse, errorResponse } from '@/lib/response';
 import KYC from '@/models/KYC';
 import Investment from '@/models/Investment';
+import User from '@/models/User';
+import crypto from 'crypto';
 
 export async function GET(request) {
     try {
@@ -24,7 +26,6 @@ export async function GET(request) {
         let currentKycStatus = user.kycStatus;
         if (kyc && kyc.status === 'approved' && user.kycStatus !== 'approved') {
             console.log(`🔧 Self-healing: Repairing KYC status for user ${user.email}`);
-            const User = (await import('@/models/User')).default;
             await User.findByIdAndUpdate(user._id, { kycStatus: 'approved' });
             currentKycStatus = 'approved';
         }
@@ -32,11 +33,9 @@ export async function GET(request) {
         // [SELF-HEALING] Ensure referral code exists
         let referralCode = user.referralCode;
         if (!referralCode) {
-            const crypto = require('crypto');
             const namePart = (user.name || 'USR').replace(/\s+/g, '').substring(0, 4).toUpperCase();
             const randPart = crypto.randomBytes(3).toString('hex').toUpperCase();
             referralCode = `${namePart}${randPart}`;
-            const User = (await import('@/models/User')).default;
             await User.findByIdAndUpdate(user._id, { referralCode });
         }
 

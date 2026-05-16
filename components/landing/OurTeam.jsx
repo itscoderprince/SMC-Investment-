@@ -1,4 +1,4 @@
-"use client";
+// Server Component — uses next/image with static data, fully SSR-able
 
 import Image from "next/image";
 import { Users } from "lucide-react";
@@ -43,7 +43,7 @@ const OurTeam = () => {
                 {/* Section Header */}
                 <div className="mb-16 text-center">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
-                        <Users className="w-3 h-3" />
+                        <Users className="w-3 h-3" aria-hidden="true" />
                         Leadership
                     </div>
                     <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-6">
@@ -73,6 +73,7 @@ const OurTeam = () => {
                                     src={member.image}
                                     alt={member.name}
                                     fill
+                                    loading="lazy"
                                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                                     sizes="(max-width: 768px) 100vw, 33vw"
                                 />

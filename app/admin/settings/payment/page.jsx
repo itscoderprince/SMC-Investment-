@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { adminApi } from "@/lib/api";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import {
     Card,
     CardContent,

@@ -54,7 +54,8 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 import { useAdminKYC } from "@/hooks/useApi";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 function StatusBadge({ status }) {
     if (status === "approved" || status === "verified") {
@@ -82,6 +83,7 @@ function StatusBadge({ status }) {
 }
 
 export default function KYCManagementPage() {
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [filters, setFilters] = useState({
         status: "all",
@@ -125,6 +127,9 @@ export default function KYCManagementPage() {
 
             // Refetch data
             await refetch();
+            
+            // Force instant sidebar badge update
+            queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
 
             if (selectedKyc?._id === id || selectedKyc?.id === id) {
                 setIsSheetOpen(false);
@@ -151,6 +156,9 @@ export default function KYCManagementPage() {
 
             // Refetch data
             await refetch();
+            
+            // Force instant sidebar badge update
+            queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
 
             if (selectedKyc?._id === id || selectedKyc?.id === id) {
                 setIsSheetOpen(false);

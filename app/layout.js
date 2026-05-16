@@ -1,17 +1,12 @@
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
+import { Toaster } from "react-hot-toast";
 import InitialAuth from "@/components/InitialAuth";
+import Providers from "@/components/Providers";
 
 // Root layout for the application
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
   subsets: ["latin"],
   display: "swap",
 });
@@ -25,11 +20,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-white text-slate-900`}
+        className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}
       >
-        <InitialAuth />
-        <Toaster position="top-right" richColors closeButton />
-        {children}
+        <Providers>
+          <InitialAuth />
+          <Toaster position="top-right" reverseOrder={false} />
+          {children}
+        </Providers>
       </body>
     </html>
   );

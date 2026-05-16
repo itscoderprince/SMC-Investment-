@@ -5,27 +5,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { z } from "zod";
-import { Loader2, User, Mail, Phone, Lock, Eye, EyeOff, Check, ShieldCheck, UserPlus, ArrowRight, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, UserPlus, ArrowRight, ArrowLeft } from "lucide-react";
+import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    CardFooter,
+} from "@/components/ui/card";
+import {
+    Field,
+    FieldDescription,
+    FieldLabel,
+} from "@/components/ui/field";
 import { useAuthStore } from "@/store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-
-// Schema - Split into logical steps validation when navigating
-const registerSchema = z.object({
-    fullName: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
-    phone: z.string().regex(/^\+?[\d\s\-]{7,20}$/, "Invalid phone number"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-    referralCode: z.string().optional(),
-    agreeTerms: z.literal(true, { errorMap: () => ({ message: "You must agree to the terms" }) }),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-});
+import { registerSchema } from "@/lib/validations/auth";
 
 function RegisterForm() {
     const [step, setStep] = useState(1);
@@ -34,15 +34,18 @@ function RegisterForm() {
 
     const router = useRouter();
     const searchParams = useSearchParams();
+    const registerUser = useAuthStore((state) => state.register);
 
     const {
         register,
         handleSubmit,
         trigger,
+        setValue,
+        watch,
         formState: { errors }
     } = useForm({
         resolver: zodResolver(registerSchema),
-        mode: "onChange", // Real-time validation for better UX
+        mode: "onChange",
         defaultValues: {
             fullName: "",
             email: "",
@@ -54,7 +57,6 @@ function RegisterForm() {
         },
     });
 
-    // Validate step 1 before moving to step 2
     const nextStep = async () => {
         const isValid = await trigger(["fullName", "email", "phone"]);
         if (isValid) setStep(2);
@@ -65,61 +67,17 @@ function RegisterForm() {
     const onSubmit = async (data) => {
         setIsLoading(true);
         try {
-            // Direct fetch call for maximum stability
-            const response = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: data.fullName,
-                    email: data.email,
-                    phone: data.phone,
-                    password: data.password,
-                    referralCode: data.referralCode || undefined,
-                }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok || !result.success) {
-                throw new Error(result.error || result.message || "Registration failed");
-            }
-
-            // Sync with store
-            useAuthStore.setState({
-                user: result.data.user,
-                accessToken: result.data.accessToken,
-                refreshToken: result.data.refreshToken,
-                isAuthenticated: true,
-                isLoading: false
-            });
-
-            // Persist to localStorage
-            try {
-                const storage = {
-                    state: {
-                        user: result.data.user,
-                        accessToken: result.data.accessToken,
-                        refreshToken: result.data.refreshToken,
-                        isAuthenticated: true
-                    },
-                    version: 0
-                };
-                localStorage.setItem('auth-storage', JSON.stringify(storage));
-            } catch (e) { console.error(e) }
-
+            await registerUser(data);
             toast.success("Account created successfully! Welcome aboard.");
             router.push("/dashboard");
-
         } catch (error) {
             console.error("Registration error:", error);
-            const msg = error instanceof Error ? error.message : "Registration failed";
-            toast.error(msg);
+            toast.error(error.message || "Registration failed");
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Calculate progress for step indicator
     const stepProgress = step === 1 ? 50 : 100;
 
     return (
@@ -129,25 +87,22 @@ function RegisterForm() {
             transition={{ duration: 0.4, type: "spring" }}
             className="w-full max-w-sm mx-auto"
         >
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-2xl shadow-2xl overflow-hidden">
-
-                {/* Header with Progress */}
-                <div className="relative px-6 pt-6 pb-2">
+            <Card className="shadow-lg border-neutral-200/60 dark:border-white/5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden">
+                <CardHeader className="relative pb-2">
                     <div className="flex justify-between items-center mb-4">
-                        <div className="flex flex-col">
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                        <div className="flex flex-col text-left">
+                            <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                                 {step === 1 ? "Personal Details" : "Security Setup"}
-                            </h1>
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
+                            </CardTitle>
+                            <CardDescription className="text-[10px] uppercase tracking-wider font-semibold">
                                 Step {step} of 2
-                            </p>
+                            </CardDescription>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                             {step === 1 ? <UserPlus className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
                         </div>
                     </div>
 
-                    {/* Progress Bar */}
                     <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <motion.div
                             className="h-full bg-blue-600 rounded-full"
@@ -156,208 +111,203 @@ function RegisterForm() {
                             transition={{ duration: 0.5, ease: "easeInOut" }}
                         />
                     </div>
-                </div>
+                </CardHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-6">
-                    <AnimatePresence mode="wait">
-                        {step === 1 ? (
-                            <motion.div
-                                key="step1"
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.2 }}
-                                className="space-y-4"
-                            >
-                                {/* Full Name */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase tracking-wide font-bold text-slate-500 ml-1">Full Name <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            {...register("fullName")}
-                                            placeholder="John Doe"
-                                            className={cn(
-                                                "w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                                                errors.fullName
-                                                    ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                                                    : "border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                            )}
-                                        />
-                                    </div>
-                                    {errors.fullName && <p className="text-[10px] text-red-500 font-medium pl-1">{errors.fullName.message}</p>}
-                                </div>
-
-                                {/* Email */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase tracking-wide font-bold text-slate-500 ml-1">Email Address <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            {...register("email")}
-                                            type="email"
-                                            placeholder="you@example.com"
-                                            className={cn(
-                                                "w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                                                errors.email
-                                                    ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                                                    : "border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                            )}
-                                        />
-                                    </div>
-                                    {errors.email && <p className="text-[10px] text-red-500 font-medium pl-1">{errors.email.message}</p>}
-                                </div>
-
-                                {/* Phone */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase tracking-wide font-bold text-slate-500 ml-1">Phone Number <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            {...register("phone")}
-                                            type="tel"
-                                            placeholder="+1 234 567 8900"
-                                            className={cn(
-                                                "w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                                                errors.phone
-                                                    ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                                                    : "border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                            )}
-                                        />
-                                    </div>
-                                    {errors.phone && <p className="text-[10px] text-red-500 font-medium pl-1">{errors.phone.message}</p>}
-                                </div>
-
-                                <Button
-                                    type="button"
-                                    onClick={nextStep}
-                                    className="w-full h-10 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/20"
+                <CardContent className="pt-4">
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <AnimatePresence mode="wait">
+                            {step === 1 ? (
+                                <motion.div
+                                    key="step1"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="space-y-4"
                                 >
-                                    Continue <ArrowRight className="ml-2 w-4 h-4" />
-                                </Button>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="step2"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                transition={{ duration: 0.2 }}
-                                className="space-y-4"
-                            >
-                                {/* Password */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase tracking-wide font-bold text-slate-500 ml-1">Password <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            {...register("password")}
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="Create a strong password"
-                                            className={cn(
-                                                "w-full h-10 pl-10 pr-10 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                                                errors.password
-                                                    ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                                                    : "border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                            )}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 transition-colors"
-                                        >
-                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
-                                    </div>
-                                    {errors.password && <p className="text-[10px] text-red-500 font-medium pl-1">{errors.password.message}</p>}
-                                </div>
+                                    {/* Full Name */}
+                                    <Field>
+                                        <FieldLabel htmlFor="fullName" icon={User}>Full Name</FieldLabel>
+                                        <div className="relative">
+                                            <Input
+                                                {...register("fullName")}
+                                                id="fullName"
+                                                placeholder="John Doe"
+                                                className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 h-11"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        {errors.fullName && <FieldDescription className="text-destructive font-medium text-[11px] mt-1">{errors.fullName.message}</FieldDescription>}
+                                    </Field>
 
-                                {/* Confirm Password */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase tracking-wide font-bold text-slate-500 ml-1">Confirm Password <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            {...register("confirmPassword")}
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="Repeat password"
-                                            className={cn(
-                                                "w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                                                errors.confirmPassword
-                                                    ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                                                    : "border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                            )}
-                                        />
-                                    </div>
-                                    {errors.confirmPassword && <p className="text-[10px] text-red-500 font-medium pl-1">Passwords do not match</p>}
-                                </div>
+                                    {/* Email */}
+                                    <Field>
+                                        <FieldLabel htmlFor="email" icon={Mail}>Email Address</FieldLabel>
+                                        <div className="relative">
+                                            <Input
+                                                {...register("email")}
+                                                id="email"
+                                                type="email"
+                                                placeholder="you@example.com"
+                                                className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 h-11"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        {errors.email && <FieldDescription className="text-destructive font-medium text-[11px] mt-1">{errors.email.message}</FieldDescription>}
+                                    </Field>
 
-                                {/* Referral Code */}
-                                <div className="space-y-1 pt-2">
-                                    <div className="relative group">
-                                        <div className="absolute left-3 top-2.5 flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold">#</div>
-                                        <input
-                                            {...register("referralCode")}
-                                            placeholder="Referral Code (Optional)"
-                                            className="w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono tracking-wide placeholder:font-sans placeholder:tracking-normal"
-                                        />
-                                    </div>
-                                </div>
+                                    {/* Phone */}
+                                    <Field>
+                                        <FieldLabel htmlFor="phone" icon={Phone}>Phone Number</FieldLabel>
+                                        <div className="relative">
+                                            <Input
+                                                {...register("phone")}
+                                                id="phone"
+                                                type="tel"
+                                                placeholder="+1 234 567 8900"
+                                                className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 h-11"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        {errors.phone && <FieldDescription className="text-destructive font-medium text-[11px] mt-1">{errors.phone.message}</FieldDescription>}
+                                    </Field>
 
-                                {/* Terms */}
-                                <div className="flex items-start gap-3 pt-2">
-                                    <div className="relative flex items-start">
-                                        <input
-                                            {...register("agreeTerms")}
-                                            type="checkbox"
-                                            id="terms"
-                                            className="peer h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <label htmlFor="terms" className="text-[11px] leading-tight text-slate-500">
-                                        I verify that I am over 18 years of age and I agree to the <Link href="/terms" className="text-blue-600 font-semibold hover:underline">Terms of Service</Link> & <Link href="/privacy" className="text-blue-600 font-semibold hover:underline">Privacy Policy</Link> <span className="text-red-500">*</span>
-                                    </label>
-                                </div>
-                                {errors.agreeTerms && <p className="text-[10px] text-red-500 font-medium pl-1">You must agree to continue</p>}
-
-                                <div className="flex gap-3 mt-4">
                                     <Button
                                         type="button"
-                                        variant="outline"
-                                        onClick={prevStep}
-                                        className="h-10 w-12 rounded-xl border-slate-200 text-slate-500"
+                                        onClick={nextStep}
+                                        className="w-full h-11 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/20"
                                     >
-                                        <ArrowLeft className="w-5 h-5" />
+                                        Continue <ArrowRight className="ml-2 size-4" />
                                     </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={isLoading}
-                                        className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20"
-                                    >
-                                        {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Complete Registration"}
-                                    </Button>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="step2"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="space-y-4"
+                                >
+                                    {/* Password */}
+                                    <Field>
+                                        <FieldLabel htmlFor="password" icon={Lock}>Password</FieldLabel>
+                                        <div className="relative">
+                                            <Input
+                                                {...register("password")}
+                                                id="password"
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Create a strong password"
+                                                className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 pr-10 h-11"
+                                                disabled={isLoading}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                            </button>
+                                        </div>
+                                        {errors.password && <FieldDescription className="text-destructive font-medium text-[11px] mt-1">{errors.password.message}</FieldDescription>}
+                                    </Field>
 
-                    <div className="mt-6 text-center">
-                        <p className="text-[11px] text-slate-400">
-                            Already have an account?{" "}
-                            <Link href="/login" className="text-blue-600 font-bold hover:underline">
-                                Sign In
-                            </Link>
-                        </p>
-                    </div>
-                </form>
-            </div>
+                                    {/* Confirm Password */}
+                                    <Field>
+                                        <FieldLabel htmlFor="confirmPassword" icon={Lock}>Confirm Password</FieldLabel>
+                                        <div className="relative">
+                                            <Input
+                                                {...register("confirmPassword")}
+                                                id="confirmPassword"
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Repeat password"
+                                                className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 h-11"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        {errors.confirmPassword && <FieldDescription className="text-destructive font-medium text-[11px] mt-1">Passwords do not match</FieldDescription>}
+                                    </Field>
+
+                                    {/* Referral Code */}
+                                    <Field>
+                                        <FieldLabel htmlFor="referralCode">Referral Code (Optional)</FieldLabel>
+                                        <div className="relative">
+                                            <Input
+                                                {...register("referralCode")}
+                                                id="referralCode"
+                                                placeholder="Referral Code"
+                                                className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 font-mono tracking-wide placeholder:font-sans placeholder:tracking-normal h-11"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                    </Field>
+
+                                    {/* Terms and Conditions */}
+                                    <div className="flex items-start gap-3 pt-2">
+                                        <Checkbox
+                                            id="agreeTerms"
+                                            checked={watch("agreeTerms")}
+                                            onCheckedChange={(checked) => setValue("agreeTerms", checked === true, { shouldValidate: true })}
+                                            className="mt-0.5"
+                                        />
+                                        <label htmlFor="agreeTerms" className="text-[11px] leading-tight text-muted-foreground">
+                                            I verify that I am over 18 years of age and I agree to the <Link href="/terms" className="text-blue-600 font-semibold hover:underline">Terms of Service</Link> & <Link href="/privacy" className="text-blue-600 font-semibold hover:underline">Privacy Policy</Link> <span className="text-red-500">*</span>
+                                        </label>
+                                    </div>
+                                    {errors.agreeTerms && <p className="text-[10px] text-red-500 font-medium pl-1 mt-1">{errors.agreeTerms.message}</p>}
+
+                                    <div className="flex gap-3 mt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={prevStep}
+                                            className="h-11 w-12 rounded-xl border-slate-200 dark:border-white/10 text-muted-foreground"
+                                        >
+                                            <ArrowLeft className="size-5" />
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20"
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <Loader2 className="mr-2 size-4 animate-spin" />
+                                                    Registering...
+                                                </>
+                                            ) : (
+                                                "Complete Registration"
+                                            )}
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </form>
+                </CardContent>
+
+                <CardFooter className="px-6 pb-6 text-center justify-center border-t border-slate-100 dark:border-white/5 pt-4">
+                    <p className="text-xs text-muted-foreground">
+                        Already have an account?{" "}
+                        <Link href="/login" className="font-bold text-blue-600 hover:text-blue-500 transition-colors hover:underline">
+                            Sign In
+                        </Link>
+                    </p>
+                </CardFooter>
+            </Card>
         </motion.div>
     );
 }
 
 export default function RegisterPage() {
     return (
-        <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin h-6 w-6 text-blue-600" /></div>}>
+        <Suspense fallback={
+            <Card className="shadow-lg border-neutral-200/60 dark:border-white/5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl">
+                <CardContent className="p-12 flex justify-center items-center">
+                    <Loader2 className="size-8 animate-spin text-blue-600" />
+                </CardContent>
+            </Card>
+        }>
             <RegisterForm />
         </Suspense>
     );

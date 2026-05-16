@@ -28,14 +28,7 @@ import {
     Download
 } from "lucide-react";
 
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+// Breadcrumb imports removed as AdminLayout handles it
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -83,9 +76,17 @@ const quickActions = [
 ];
 
 export default function AdminDashboardPage() {
+    // 1. DATA FETCHING (POWERED BY REACT QUERY)
+    // useAdminDashboard automatically handles API requests and background caching.
+    // By extracting 'data', 'loading', and 'refetch', we keep UI code clean.
     const { data, loading, error, refetch } = useAdminDashboard();
+    
+    // 2. LOCAL UI STATE
+    // This state purely controls the spinning animation of the refresh button.
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    // 3. ACTION HANDLERS
+    // Wraps the generic refetch function with visual loading cues
     const handleRefresh = async () => {
         setIsRefreshing(true);
         await refetch();
@@ -204,23 +205,8 @@ export default function AdminDashboardPage() {
         <div className="space-y-4 p-1 max-w-[1600px] mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 px-1">
-                <Breadcrumb>
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/admin/dashboard" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-colors">
-                                <Home className="w-3.5 h-3.5" />
-                                Admin
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbPage className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50/50 px-2 py-1 rounded-md">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Dashboard
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
+                {/* Redundant breadcrumb removed here as AdminLayout handles global breadcrumbs */}
+                <div></div>
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] text-gray-400 font-mono hidden sm:inline-block">
                         Last updated: {new Date().toLocaleTimeString()}

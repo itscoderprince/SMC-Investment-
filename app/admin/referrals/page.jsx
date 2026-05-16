@@ -21,14 +21,7 @@ import {
     ArrowRight,
 } from "lucide-react";
 
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+// Breadcrumb imports removed as AdminLayout handles it
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -72,25 +65,7 @@ export default function AdminReferralsPage() {
     return (
         <div className="space-y-6 max-w-7xl mx-auto px-4 lg:px-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <Breadcrumb>
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/admin/dashboard" className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
-                                <Shield className="w-3.5 h-3.5" />
-                                Admin
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbPage className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                <Users className="w-3.5 h-3.5" />
-                                Referral Management
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
-            </div>
+            {/* Header wrapper removed as Breadcrumb is provided by layout */}
 
             {/* Admin Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

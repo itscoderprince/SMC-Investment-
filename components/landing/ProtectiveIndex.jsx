@@ -59,8 +59,14 @@ const ProtectiveIndex = () => {
                         <div className="lg:col-span-7 relative">
                             <div className="aspect-[4/3] rounded-[2rem] bg-gradient-to-tr from-blue-600/20 to-cyan-500/10 border border-white/10 flex flex-col items-center justify-center p-8 text-center">
                                 <div className="w-32 h-32 rounded-full bg-blue-600/20 flex items-center justify-center mb-8 relative">
-                                    <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-500 animate-spin duration-[10s]"></div>
-                                    <ShieldCheck className="w-16 h-16 text-blue-500" />
+                                    <div
+                                        className="absolute inset-0 rounded-full border-2 border-dashed border-blue-500"
+                                        style={{
+                                            animation: "spin 12s linear infinite",
+                                            willChange: "transform",
+                                        }}
+                                    />
+                                    <ShieldCheck className="w-16 h-16 text-blue-500" aria-hidden="true" />
                                 </div>
 
                                 <h3 className="text-2xl font-black text-white mb-4">Final Settlement Protocol</h3>

@@ -1,8 +1,8 @@
-"use client";
+// Server Component — no hooks, no browser APIs, fully SSR-able
 
 import { ShieldCheck, Wallet, ChartLine, LockKeyhole, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/button"; // Note: Re-using card-like structure but customized
+// Note: Card structure is custom-built in this file, no need for external card imports if not used.
 
 const FeatureCard = ({ icon: Icon, title, description, colorClass, delay }) => {
     return (
@@ -18,7 +18,7 @@ const FeatureCard = ({ icon: Icon, title, description, colorClass, delay }) => {
                 "w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300",
                 "bg-white/5 text-slate-300 group-hover:text-blue-400 group-hover:scale-110"
             )}>
-                <Icon className="w-6 h-6" />
+                <Icon className="w-6 h-6" aria-hidden="true" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">
                 {title}
@@ -63,7 +63,7 @@ const Features = () => {
     ];
 
     return (
-        <section id="features" className="py-20 px-4 md:px-6">
+        <section id="features" aria-labelledby="features-heading" className="py-20 px-4 md:px-6">
             <div className="container mx-auto max-w-7xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {features.map((feature, index) => (

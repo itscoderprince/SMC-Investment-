@@ -99,7 +99,7 @@ export async function POST(request) {
             return validationErrorResponse(validation.errors);
         }
 
-        const { subject, description, category } = validation.data;
+        const { subject, description, category, priority } = validation.data;
 
         const Ticket = await getTicketModel();
 
@@ -112,6 +112,7 @@ export async function POST(request) {
             subject,
             description,
             category,
+            priority,
             status: 'open'
         });
 

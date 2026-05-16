@@ -52,7 +52,8 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 import { useAdminPayments } from "@/hooks/useApi";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 function StatusBadge({ status }) {
     if (status === "approved" || status === "verified") {
@@ -88,21 +89,29 @@ function StatusBadge({ status }) {
 }
 
 export default function PaymentManagementPage() {
+    const queryClient = useQueryClient();
+    // 1. FILTER & SEARCH STATE
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const perPage = 10;
 
+    // 2. DATA FETCHING (REACT QUERY)
+    // Caches the list of payments and automatically re-fetches when dependencies change.
     const { payments, pagination, loading, error, refetch } = useAdminPayments({
         page: currentPage,
         limit: perPage,
         search: searchQuery
     });
 
+    // 3. UI INTERACTION STATE
+    // Manages the sliding drawer (Sheet) and the loading state of specific action buttons
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(null); // ID of the payment being processed
     const [mounted, setMounted] = useState(false);
 
+    // 4. LIFECYCLE
+    // Prevents hydration errors by ensuring component renders on client side first
     React.useEffect(() => {
         setMounted(true);
     }, []);
@@ -133,6 +142,9 @@ export default function PaymentManagementPage() {
             // Refetch without showing the global loading spinner if possible, 
             // but for now we'll just wait for the refetch to complete.
             await refetch();
+            
+            // Force instant sidebar badge update
+            queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
 
             if (selectedPayment?._id === id || selectedPayment?.id === id) {
                 setIsSheetOpen(false);

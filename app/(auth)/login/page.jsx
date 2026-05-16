@@ -5,191 +5,161 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { Loader2, Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    CardFooter,
+} from "@/components/ui/card";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
 import { useAuthStore } from "@/store/authStore";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(1, "Password is required"),
-});
+import { loginSchema } from "@/lib/validations/auth";
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+    const login = useAuthStore((state) => state.login);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { email: "", password: "" },
+    });
 
-  const onSubmit = async (data) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+    const onSubmit = async (data) => {
+        setIsLoading(true);
+        try {
+            const result = await login(data);
+            toast.success("Welcome back! 👋");
 
-      const json = await res.json();
+            if (result.user?.role === "admin" || result.user?.role === "master_admin") {
+                router.push("/admin/dashboard");
+            } else {
+                router.push("/dashboard");
+            }
+        } catch (err) {
+            toast.error(err.message || "Login failed");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-      if (!res.ok || !json.success) {
-        const msg = json.error || json.message || "Invalid credentials";
-        throw new Error(msg);
-      }
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="w-full max-w-sm mx-auto"
+        >
+            <Card className="shadow-lg border-neutral-200/60 dark:border-white/5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden">
+                <CardHeader className="text-center pb-2">
+                    <div className="flex justify-center mb-2">
+                        <div className="p-3 bg-blue-500/10 text-blue-600 rounded-full dark:bg-blue-900/20 dark:text-blue-400">
+                            <Mail className="size-6" />
+                        </div>
+                    </div>
+                    <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+                    <CardDescription className="text-xs">
+                        Sign in to your SMC Protocol account
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        <FieldGroup>
+                            {/* Email Address */}
+                            <Field>
+                                <FieldLabel htmlFor="email" icon={Mail}>Email Address</FieldLabel>
+                                <div className="relative">
+                                    <Input
+                                        {...register("email")}
+                                        id="email"
+                                        type="email"
+                                        placeholder="name@example.com"
+                                        className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 transition-colors h-11 pr-4"
+                                        autoComplete="email"
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                                {errors.email && (
+                                    <FieldDescription className="text-destructive font-medium mt-1 text-[11px]">
+                                        {errors.email.message}
+                                    </FieldDescription>
+                                )}
+                            </Field>
 
-      const { accessToken, refreshToken, user } = json.data;
+                            {/* Password */}
+                            <Field>
+                                <div className="flex items-center justify-between">
+                                    <FieldLabel htmlFor="password" icon={Lock}>Password</FieldLabel>
+                                    <Link href="/forgot-password" className="text-xs font-semibold text-blue-600 hover:text-blue-500 transition-colors hover:underline">
+                                        Forgot Password?
+                                    </Link>
+                                </div>
+                                <div className="relative">
+                                    <Input
+                                        {...register("password")}
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        className="bg-muted/30 focus-visible:bg-white dark:focus-visible:bg-slate-950 transition-colors pr-10 h-11"
+                                        disabled={isLoading}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                    </button>
+                                </div>
+                                {errors.password && (
+                                    <FieldDescription className="text-destructive font-medium mt-1 text-[11px]">
+                                        {errors.password.message}
+                                    </FieldDescription>
+                                )}
+                            </Field>
 
-      // Update Zustand store
-      useAuthStore.setState({
-        user,
-        accessToken,
-        refreshToken,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-
-      // Persist to localStorage
-      try {
-        const existing = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-        existing.state = { ...existing.state, user, accessToken, refreshToken, isAuthenticated: true };
-        localStorage.setItem("auth-storage", JSON.stringify(existing));
-      } catch (_) { }
-
-      toast.success("Welcome back! 👋");
-
-      if (user?.role === "admin" || user?.role === "master_admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err) || "Login failed";
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="w-full max-w-sm mx-auto"
-    >
-      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-100 dark:border-white/5 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-white/5">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Welcome Back</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">Sign in to your SMC Protocol account</p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="px-6 py-5 space-y-4">
-            {/* Email */}
-            <div className="space-y-1">
-              <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <input
-                  {...register("email")}
-                  type="email"
-                  placeholder="you@example.com"
-                  className={cn(
-                    "w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                    errors.email
-                      ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                      : "border-slate-200 dark:border-white/10 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                  )}
-                />
-              </div>
-              {errors.email && <p className="text-red-500 text-[10px] font-medium pl-1">{errors.email.message}</p>}
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <Link href="/forgot-password" className="text-[10px] font-bold text-blue-600 hover:text-blue-500 transition-colors">
-                  Forgot?
-                </Link>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <input
-                  {...register("password")}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className={cn(
-                    "w-full h-10 pl-10 pr-10 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none transition-all",
-                    errors.password
-                      ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                      : "border-slate-200 dark:border-white/10 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && <p className="text-red-500 text-[10px] font-medium pl-1">{errors.password.message}</p>}
-            </div>
-
-            {/* Submit */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 font-bold text-sm mt-2 transition-all"
-            >
-              {isLoading ? (
-                <Loader2 className="animate-spin w-4 h-4" />
-              ) : (
-                <>
-                  Sign In <ArrowRight className="ml-1.5 w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Footer */}
-          <div className="px-6 pb-6 text-center">
-            <p className="text-[11px] text-slate-500">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="font-bold text-blue-600 hover:text-blue-500 transition-colors">
-                Create Account
-              </Link>
-            </p>
-          </div>
-        </form>
-      </div>
-    </motion.div>
-  );
-}
-// Helper icon
-function ArrowRight({ className }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  )
+                            <Button type="submit" disabled={isLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 font-semibold text-sm transition-all mt-2">
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                        Signing In&hellip;
+                                    </>
+                                ) : (
+                                    <>
+                                        Sign In
+                                        <ArrowRight className="ml-2 size-4" />
+                                    </>
+                                )}
+                            </Button>
+                        </FieldGroup>
+                    </form>
+                </CardContent>
+                <CardFooter className="px-6 pb-6 text-center justify-center border-t border-slate-100 dark:border-white/5 pt-4">
+                    <p className="text-xs text-muted-foreground">
+                        Don&apos;t have an account?{" "}
+                        <Link href="/register" className="font-bold text-blue-600 hover:text-blue-500 transition-colors hover:underline">
+                            Create Account
+                        </Link>
+                    </p>
+                </CardFooter>
+            </Card>
+        </motion.div>
+    );
 }

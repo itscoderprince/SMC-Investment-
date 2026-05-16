@@ -1,4 +1,4 @@
-"use client";
+// Server Component — no hooks, static navigation/links, fully SSR-able
 
 import { Shield, Twitter, Linkedin, Github, Youtube, Mail, ArrowRight, Landmark } from "lucide-react";
 import Link from "next/link";
@@ -23,12 +23,25 @@ const Footer = () => {
                             SMC INDEX LLC is registered in Russia (Registration Number 4093786) and also registered in the European Union, holding the necessary EU Forex License No. EUFX74355. The company is also registered under the Financial Services Commission (FSC) with Registration Number FSC/468/LLC 7902/25, and it provides secure and transparent forex and crypto trading services.
                         </p>
                         <div className="flex gap-3">
-                            <Link href="mailto:Smcruteam@gmail.com" className="h-9 w-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all text-slate-400">
-                                <Mail size={16} />
+                            <Link 
+                                href="mailto:Smcruteam@gmail.com" 
+                                aria-label="Send email to SMC Support"
+                                className="h-9 w-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all text-slate-400"
+                            >
+                                <Mail size={16} aria-hidden="true" />
                             </Link>
-                            {[Twitter, Linkedin, Github].map((Icon, i) => (
-                                <Link key={i} href="#" className="h-9 w-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all text-slate-400">
-                                    <Icon size={16} />
+                            {[
+                                { Icon: Twitter, label: "Twitter" },
+                                { Icon: Linkedin, label: "LinkedIn" },
+                                { Icon: Github, label: "GitHub" }
+                            ].map(({ Icon, label }, i) => (
+                                <Link 
+                                    key={i} 
+                                    href="#" 
+                                    aria-label={`Follow us on ${label}`}
+                                    className="h-9 w-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all text-slate-400"
+                                >
+                                    <Icon size={16} aria-hidden="true" />
                                 </Link>
                             ))}
                         </div>
@@ -61,13 +74,19 @@ const Footer = () => {
                         <h4 className="text-white font-semibold text-sm">Sync Reports</h4>
                         <p className="text-sm text-slate-400/80 leading-relaxed font-normal">Subscribe to receive weekly forensic auditing digests and market volatility alerts.</p>
                         <div className="flex gap-2">
+                            <label htmlFor="newsletter-email" className="sr-only">Subscribe to institutional reports</label>
                             <input
+                                id="newsletter-email"
                                 type="email"
                                 placeholder="Institutional email..."
                                 className="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-600/50 transition-colors placeholder:text-slate-600"
                             />
-                            <Button size="icon" className="h-auto w-10 bg-blue-600 hover:bg-blue-700 rounded-xl">
-                                <ArrowRight size={16} />
+                            <Button 
+                                size="icon" 
+                                aria-label="Subscribe to newsletter"
+                                className="h-auto w-10 bg-blue-600 hover:bg-blue-700 rounded-xl"
+                            >
+                                <ArrowRight size={16} aria-hidden="true" />
                             </Button>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-medium text-emerald-500/80">
@@ -80,7 +99,7 @@ const Footer = () => {
                 {/* Bottom Bar */}
                 <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex flex-col gap-1.5 text-center md:text-left">
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-xs text-slate-400 font-medium">
                             &copy; {new Date().getFullYear()} SMC Capital Management Protocol.
                         </p>
                         <p className="text-[10px] text-slate-600 max-w-2xl leading-relaxed">
@@ -90,7 +109,7 @@ const Footer = () => {
                             Landmark: Near the Moscow-City International Business Center.
                         </p>
                     </div>
-                    <div className="flex gap-6 text-xs text-slate-500 font-medium">
+                    <div className="flex gap-6 text-xs text-slate-400 font-medium">
                         <Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link>
                         <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
                         <Link href="#indices" className="hover:text-slate-300 transition-colors">Registry</Link>

@@ -16,9 +16,19 @@ export async function GET(request, { params }) {
             return auth.response;
         }
 
-        const ticket = await Ticket.findById(id).populate('userId', 'name email phone');
+        const ticket = await Ticket.findById(id).populate('userId', 'name email phone').lean();
         if (!ticket) {
             return notFoundResponse('Ticket not found');
+        }
+
+        // Map userId to user for consistency with listing API
+        if (ticket.userId) {
+            ticket.user = {
+                id: ticket.userId._id,
+                name: ticket.userId.name,
+                email: ticket.userId.email,
+                phone: ticket.userId.phone
+            };
         }
 
         return successResponse(ticket);

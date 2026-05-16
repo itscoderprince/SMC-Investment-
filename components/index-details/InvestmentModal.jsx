@@ -40,7 +40,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { QRCodeSVG } from "qrcode.react";
 import jsPDF from "jspdf";
 import { useDropzone } from "react-dropzone";

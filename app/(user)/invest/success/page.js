@@ -1,159 +1,108 @@
 "use client";
 
-import { CheckCircle2, Copy, Download, TrendingUp, Clock, ChevronRight, Home, ArrowRight } from "lucide-react";
+import { CheckCircle, Download, TrendingUp, Clock, ChevronRight, Home, ArrowRight, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export default function InvestmentSuccessPage() {
-    const requestId = "#PAY-123456";
-
-    const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text);
-        // You could show a toast here
-    };
-
     return (
-        <div className="min-h-screen bg-[#f9fafb] dark:bg-slate-950 pb-20">
-            {/* Hero Section */}
-            <section className="relative pt-24 pb-32 overflow-hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-white/5">
-                <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-                    <div className="relative left-[calc(50%-11rem)] aspect-1155/678 w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-blue-600 to-emerald-500 opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"></div>
-                </div>
+        <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
+            
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-2xl"
+            >
+                {/* ─── Top Banner Segment ─── */}
+                <div className="bg-[#0f172a] rounded-t-3xl p-8 md:p-12 text-center relative overflow-hidden border border-slate-800">
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl" />
+                        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
+                    </div>
+                    
+                    <div className="relative z-10 flex flex-col items-center">
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", damping: 12, delay: 0.1 }}
+                            className="w-20 h-20 rounded-full bg-emerald-500/10 backdrop-blur-md border border-emerald-500/30 text-emerald-400 flex items-center justify-center mb-6 shadow-2xl"
+                        >
+                            <CheckCircle className="w-10 h-10" />
+                        </motion.div>
 
-                <div className="container mx-auto px-4 max-w-4xl text-center">
-                    <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="w-24 h-24 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-8 relative"
-                    >
-                        <CheckCircle2 className="w-14 h-14" />
-                        <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping"></div>
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-4"
-                    >
-                        Investment Request Submitted! ðŸŽ‰
-                    </motion.h1>
-                    <motion.p
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-lg font-bold text-slate-500 uppercase tracking-widest flex items-center justify-center gap-3"
-                    >
-                        Payment Request <span className="text-blue-600 underline underline-offset-4 decoration-blue-600/30">#PAY-123456</span>
-                    </motion.p>
-                </div>
-            </section>
-
-            {/* Main Content */}
-            <div className="container mx-auto px-4 max-w-3xl -mt-16 relative z-10">
-                <div className="space-y-8">
-                    {/* Status Card */}
-                    <motion.div
-                        initial={{ y: 40, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-white/5 p-8 md:p-12 shadow-2xl shadow-blue-500/5"
-                    >
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12 pb-12 border-b border-slate-50 dark:border-white/5">
-                            <div className="flex items-center gap-4">
-                                <div className="w-4 h-4 rounded-full bg-amber-500 animate-pulse"></div>
-                                <div>
-                                    <p className="text-xl font-black text-slate-900 dark:text-white">Awaiting Payment Verification</p>
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Status Step 1 of 3 Complete</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-12">
-                            <div className="space-y-8">
-                                <div>
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-4">Quick Summary</h4>
-                                    <div className="space-y-5">
-                                        <div className="flex justify-between items-center text-sm font-bold">
-                                            <span className="text-slate-500">Index</span>
-                                            <span className="text-slate-900 dark:text-white uppercase tracking-tight">Tech Growth Index</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm font-bold">
-                                            <span className="text-slate-500">Amount</span>
-                                            <span className="text-slate-900 dark:text-white">â‚¹25,000</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm font-bold">
-                                            <span className="text-slate-500">Weekly Return</span>
-                                            <span className="text-emerald-500">â‚¹1,125</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-3 pt-4">
-                                    <Button className="rounded-2xl h-14 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest" asChild>
-                                        <Link href="/invest/track/PAY-123456">Track My Investment</Link>
-                                    </Button>
-                                    <Button variant="outline" className="rounded-2xl h-14 border-slate-200 dark:border-white/10 font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                                        <Download className="w-4 h-4" />
-                                        Download Receipt
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Next Steps Timeline</h4>
-                                <div className="space-y-8 relative">
-                                    <div className="absolute left-3 top-2 bottom-2 w-[2px] bg-slate-100 dark:bg-white/5"></div>
-                                    {[
-                                        { step: 1, title: "Payment Verification", status: "In Progress", duration: "2-4 hours", icon: Clock, color: "text-amber-500" },
-                                        { step: 2, title: "Investment Activation", status: "Pending", duration: "Post verification", icon: CheckCircle2, color: "text-slate-300" },
-                                        { step: 3, title: "First Returns", status: "Scheduled", duration: "Next Friday", icon: TrendingUp, color: "text-slate-300" }
-                                    ].map((item, idx) => (
-                                        <div key={idx} className="flex gap-6 relative z-10 items-start">
-                                            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-white/10", idx === 0 ? "border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]" : "")}>
-                                                <item.icon className={cn("w-3 h-3", item.color)} />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-900 dark:text-white leading-none mb-1">{item.title}</p>
-                                                <div className="flex items-center gap-2 uppercase tracking-widest">
-                                                    <span className={cn("text-[8px] font-black", item.color)}>{item.status}</span>
-                                                    <span className="text-[10px] text-slate-300">â€¢</span>
-                                                    <span className="text-[8px] font-bold text-slate-400 whitespace-nowrap">{item.duration}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Support Actions */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Link href="/dashboard" className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between group hover:border-blue-500/30 transition-all">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50 transition-all">
-                                    <Home className="w-5 h-5" />
-                                </div>
-                                <span className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-xs transition-colors group-hover:text-blue-600">Back to Dashboard</span>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 group-hover:text-blue-600 transition-all" />
-                        </Link>
-                        <Link href="/indices" className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between group hover:border-blue-500/30 transition-all">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50 transition-all">
-                                    <ChevronRight className="w-5 h-5" />
-                                </div>
-                                <span className="font-black text-slate-900 dark:text-white uppercase tracking-widest text-xs transition-colors group-hover:text-blue-600">Invest in Another Index</span>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 group-hover:text-blue-600 transition-all" />
-                        </Link>
+                        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">Pipeline Dispatched</h1>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Contract Reference ID: PROXY-NODE-LOCKED</p>
                     </div>
                 </div>
-            </div>
+
+                {/* ─── Main Details Area ─── */}
+                <div className="bg-white rounded-b-3xl border border-t-0 border-slate-100 shadow-2xl p-6 md:p-10 space-y-8">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Snapshot */}
+                        <div>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">Snapshot Allocation</h3>
+                            <div className="bg-slate-50 rounded-2xl p-5 space-y-4 border border-slate-100">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</span>
+                                    <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full uppercase">Awaiting Nodes</span>
+                                </div>
+                                <div className="h-px bg-slate-200/50" />
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount Deployed</span>
+                                    <span className="text-lg font-black text-slate-900">$ --.--</span>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-6">
+                                <Button asChild className="w-full h-12 bg-[#0f172a] hover:bg-blue-600 text-white font-black rounded-xl shadow-lg shadow-slate-200 text-[11px] uppercase tracking-[0.2em] transition-all">
+                                    <Link href="/investments">Load Tracking Terminal</Link>
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Sequential Path</h3>
+                            
+                            <div className="space-y-5 relative pl-2">
+                                <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-slate-100 -z-10" />
+                                
+                                {[
+                                    { label: "Layer 1 Protocol Verification", active: true, icon: Clock },
+                                    { label: "Consensus Settlement", active: false, icon: Zap },
+                                    { label: "Liquidity Node Active", active: false, icon: TrendingUp },
+                                ].map((stp, i) => (
+                                    <div key={i} className="flex gap-4 items-center">
+                                        <div className={cn(
+                                            "w-4 h-4 rounded-full flex items-center justify-center shrink-0 border-2 shadow-sm bg-white z-10",
+                                            stp.active ? "border-amber-500 text-amber-500" : "border-slate-200 text-slate-300"
+                                        )} />
+                                        <div className="flex-1">
+                                            <p className={cn(
+                                                "text-[11px] font-black uppercase tracking-wide",
+                                                stp.active ? "text-slate-900" : "text-slate-400"
+                                            )}>{stp.label}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── Sub Controls ─── */}
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                    <Link href="/dashboard" className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-100 bg-white text-[10px] font-black text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all uppercase tracking-widest">
+                        <Home className="w-4 h-4" /> Exit Home
+                    </Link>
+                    <Link href="/invest" className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-100 bg-white text-[10px] font-black text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all uppercase tracking-widest">
+                        Re-Entry <ArrowRight className="w-4 h-4" />
+                    </Link>
+                </div>
+            </motion.div>
         </div>
     );
 }

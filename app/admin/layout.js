@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
     Bell,
     Search,
@@ -12,6 +12,14 @@ import {
     LogOut,
     ChevronDown,
 } from "lucide-react";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { useAdminDashboard } from "@/hooks/useApi";
 import {
@@ -33,8 +41,11 @@ import { Badge } from "@/components/ui/badge";
 export default function AdminLayout({ children }) {
     const { user: authUser, logout: logoutAction } = useAuthStore();
     const router = useRouter();
+    const pathname = usePathname();
     const { data: dashboardData } = useAdminDashboard();
     const [mounted, setMounted] = React.useState(false);
+
+    const segments = pathname?.split('/').filter(Boolean) || [];
 
     const handleLogout = async () => {
         await logoutAction();
@@ -53,7 +64,7 @@ export default function AdminLayout({ children }) {
             <AdminSidebar />
             <SidebarInset>
                 {/* Top Header */}
-                <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-white/10 bg-[#0f172a] px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-white/10 bg-[#0f172a] px-4 transition-all ease-linear">
                     <div className="flex items-center gap-2 flex-1">
                         <SidebarTrigger className="-ml-1 text-gray-400 hover:bg-white/10 hover:text-white" />
                         <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
@@ -131,6 +142,35 @@ export default function AdminLayout({ children }) {
 
                 {/* Page Content */}
                 <main className="flex-1 p-4 lg:p-6 bg-[#f9fafb] min-h-[calc(100vh-3.5rem)]">
+                    {/* Dynamic Breadcrumbs */}
+                    {segments.length > 0 && (
+                        <Breadcrumb className="mb-6">
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink href="/admin" className="font-medium text-gray-500 hover:text-gray-900">Dashboard</BreadcrumbLink>
+                                </BreadcrumbItem>
+                                {segments.map((segment, index) => {
+                                    if (segment === 'admin') return null;
+                                    const isLast = index === segments.length - 1;
+                                    const href = `/${segments.slice(0, index + 1).join('/')}`;
+                                    const title = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+
+                                    return (
+                                        <React.Fragment key={href}>
+                                            <BreadcrumbSeparator />
+                                            <BreadcrumbItem>
+                                                {isLast ? (
+                                                    <BreadcrumbPage className="font-semibold text-gray-900">{title}</BreadcrumbPage>
+                                                ) : (
+                                                    <BreadcrumbLink href={href} className="font-medium text-gray-500 hover:text-gray-900">{title}</BreadcrumbLink>
+                                                )}
+                                            </BreadcrumbItem>
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    )}
                     {children}
                 </main>
             </SidebarInset>

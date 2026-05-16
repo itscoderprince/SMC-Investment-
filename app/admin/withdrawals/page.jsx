@@ -56,7 +56,8 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 import { useAdminWithdrawals } from "@/hooks/useApi";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 function StatusBadge({ status }) {
     if (status === "completed" || status === "approved") {
@@ -92,6 +93,7 @@ function StatusBadge({ status }) {
 }
 
 export default function WithdrawalsPage() {
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
@@ -129,11 +131,9 @@ export default function WithdrawalsPage() {
     const handleAction = async (id, status) => {
         try {
             if (status === 'approved') {
-                if (!txnRef) {
-                    toast.error("Transaction Reference is required for approval");
-                    return;
-                }
-                await adminApi.approveWithdrawal(id, txnRef);
+                // Allow approval without manual reference, fallback to auto-generated
+                const finalTxnRef = txnRef || `AUTO-${Date.now().toString().slice(-6)}`;
+                await adminApi.approveWithdrawal(id, finalTxnRef);
                 toast.success("Withdrawal approved and marked as processed");
             } else {
                 const reason = prompt("Reason for rejection:");
@@ -141,7 +141,15 @@ export default function WithdrawalsPage() {
                 await adminApi.rejectWithdrawal(id, reason || "Rejected by admin");
                 toast.success("Withdrawal rejected");
             }
+            
+            // 1. Refetch the local table data
             refetch();
+            
+            // 2. FORCE INSTANT SIDEBAR UPDATE
+            // Invalidating 'adminDashboard' tells React Query to instantly re-fetch 
+            // the sidebar badges without waiting for the 15-second interval.
+            queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
+            
             if (selectedRequest?._id === id) setIsSheetOpen(false);
         } catch (err) {
             toast.error(err.message || "Action failed");

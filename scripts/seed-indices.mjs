@@ -48,7 +48,7 @@ indexSchema.pre('save', function () {
     }
 });
 
-const Index = mongoose.models.Index || mongoose.model('Index', indexSchema);
+const Index = mongoose.models.Index || mongoose.model('Index', indexSchema, 'indices');
 
 // Sample indices data
 const sampleIndices = [

@@ -106,7 +106,7 @@ export function UserSidebar({ ...props }) {
 
     return (
         <Sidebar collapsible="icon" className="bg-[#0f172a] border-r-0" {...props}>
-            <SidebarHeader className="bg-[#0f172a] border-b border-white/10">
+            <SidebarHeader className="bg-[#0f172a] border-b border-white/10 h-14 flex items-center justify-center py-0 px-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton

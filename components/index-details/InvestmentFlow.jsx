@@ -40,7 +40,7 @@ import {
     CardFooter,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import dynamic from 'next/dynamic';
 import { useDropzone } from "react-dropzone";
 

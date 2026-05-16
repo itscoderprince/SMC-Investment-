@@ -198,7 +198,7 @@ investmentSchema.methods.resume = async function () {
 // Static to get user's total investment
 investmentSchema.statics.getUserTotalInvestment = async function (userId) {
     const result = await this.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(userId), isActive: true } },
+        { $match: { userId: new mongoose.Types.ObjectId(userId.toString()), isActive: true } },
         { $group: { _id: null, total: { $sum: '$amount' }, totalReturns: { $sum: '$totalReturns' } } }
     ]);
     return result[0] || { total: 0, totalReturns: 0 };
@@ -207,7 +207,7 @@ investmentSchema.statics.getUserTotalInvestment = async function (userId) {
 // Static to get user's total lifetime returns
 investmentSchema.statics.getUserTotalReturns = async function (userId) {
     const result = await this.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+        { $match: { userId: new mongoose.Types.ObjectId(userId.toString()) } },
         { $group: { _id: null, total: { $sum: '$totalReturns' } } }
     ]);
     return result[0]?.total || 0;
@@ -216,7 +216,7 @@ investmentSchema.statics.getUserTotalReturns = async function (userId) {
 // Static to get user's total active principal
 investmentSchema.statics.getUserTotalPrincipal = async function (userId) {
     const result = await this.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(userId), status: { $in: ['active', 'completed', 'withdrawn'] } } },
+        { $match: { userId: new mongoose.Types.ObjectId(userId.toString()), status: { $in: ['active', 'completed', 'withdrawn'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
     return result[0]?.total || 0;
@@ -225,7 +225,7 @@ investmentSchema.statics.getUserTotalPrincipal = async function (userId) {
 // Static to get user's investment summary
 investmentSchema.statics.getUserSummary = async function (userId) {
     const result = await this.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+        { $match: { userId: new mongoose.Types.ObjectId(userId.toString()) } },
         {
             $group: {
                 _id: '$status',

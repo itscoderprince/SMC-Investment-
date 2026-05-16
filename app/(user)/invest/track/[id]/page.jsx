@@ -18,21 +18,19 @@ import {
     Home,
     ChevronLeft,
     Clock,
-    Shield
+    Shield,
+    Activity,
+    FileText,
+    Zap,
+    Building2,
+    Lock
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { paymentsApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +64,7 @@ export default function TrackInvestmentPage({ params }) {
             setData(response);
         } catch (err) {
             setError(err.message || "Failed to load investment request");
-            toast.error("Failed to load request details");
+            toast.error("Request loading failed.");
         } finally {
             setLoading(false);
         }
@@ -77,7 +75,7 @@ export default function TrackInvestmentPage({ params }) {
         navigator.clipboard.writeText(text);
         setCopied("wallet");
         setTimeout(() => setCopied(""), 2000);
-        toast.success("Address copied to clipboard");
+        toast.success("Address cloned to clipboard");
     };
 
     const onDrop = (acceptedFiles) => {
@@ -92,7 +90,7 @@ export default function TrackInvestmentPage({ params }) {
 
     const handleSubmit = async () => {
         if (!uploadProof || !txHash) {
-            toast.error("Please provide both transaction hash and proof file");
+            toast.error("Proof document and Hash ID are mandatory.");
             return;
         }
 
@@ -104,10 +102,10 @@ export default function TrackInvestmentPage({ params }) {
             formData.append('transactionReference', txHash);
 
             await paymentsApi.uploadProof(formData);
-            toast.success("Proof submitted successfully!");
-            loadRequest(); // Reload to show processing state
+            toast.success("Security dispatch successful!");
+            loadRequest(); 
         } catch (err) {
-            toast.error(err.message || "Failed to submit proof");
+            toast.error(err.message || "Transaction logging failed.");
         } finally {
             setIsSubmitting(false);
         }
@@ -115,27 +113,28 @@ export default function TrackInvestmentPage({ params }) {
 
     if (loading) {
         return (
-            <div className="min-h-[80vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">Initializing Terminal...</p>
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-blue-600" />
+                    </div>
                 </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] animate-pulse">Establishing Secure Protocol...</p>
             </div>
         );
     }
 
     if (error || !data || !data.paymentRequest) {
         return (
-            <div className="min-h-[80vh] flex flex-col items-center justify-center gap-6 px-4 text-center">
-                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6">
+                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
                     <AlertCircle className="w-10 h-10 text-red-500" />
                 </div>
-                <div className="space-y-2">
-                    <h2 className="text-xl font-black text-slate-900">Request Not Found</h2>
-                    <p className="text-sm text-slate-500 max-w-xs">{error || "The investment request you're looking for doesn't exist or access is restricted."}</p>
-                </div>
-                <Button asChild variant="default" className="bg-slate-900 hover:bg-black font-bold h-11 px-8 rounded-xl shadow-lg">
-                    <Link href="/investments">Back to My Investments</Link>
+                <h2 className="text-xl font-black text-slate-900 mb-2">Payload Access Denied</h2>
+                <p className="text-sm font-medium text-slate-500 max-w-xs mb-8">{error || "The specified cryptographic token identifier does not exist in registry."}</p>
+                <Button asChild className="bg-[#0f172a] text-white font-bold rounded-xl h-11 px-8 shadow-lg">
+                    <Link href="/investments">Return to Dashboard</Link>
                 </Button>
             </div>
         );
@@ -146,247 +145,325 @@ export default function TrackInvestmentPage({ params }) {
     const status = paymentRequest.status;
     const amount = paymentRequest.amount || 0;
 
-    // Fix: Use index object from API instead of indexId
-    const indexInfo = paymentRequest.index || { name: "Investment Index" };
-    const indexName = indexInfo.name;
-
+    const indexInfo = paymentRequest.index || { name: "Manual Deposit System" };
     const isActive = ['approved', 'active', 'verified'].includes(status);
     const isProcessing = ['proof_uploaded', 'submitted'].includes(status);
+    const isRejected = status === 'rejected';
+
+    // Determine Stepper progress mapping
+    let currentStep = 0; 
+    if (isPending) currentStep = 1; 
+    else if (isProcessing) currentStep = 2;
+    else if (isActive) currentStep = 3;
+
+    const steps = [
+        { label: "Pipeline Lock", icon: Building2 },
+        { label: "Fund Dispatch", icon: Wallet },
+        { label: "Verification", icon: Activity },
+        { label: "Deployed", icon: Zap }
+    ];
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
-            {/* Compact Breadcrumb Header */}
-            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div className="space-y-2">
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                    <Home className="w-3 h-3" />
-                                    Home
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/investments" className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-blue-600 transition-colors">
-                                    Investments
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                    Tracking
-                                </BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Investment Terminal</h1>
-                        <Badge variant="outline" className={cn(
-                            "font-bold uppercase tracking-[0.1em] px-2.5 py-1 text-[9px] border-2",
-                            isPending ? "bg-amber-50 text-amber-600 border-amber-200" :
-                                isActive ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
-                                    isProcessing ? "bg-blue-50 text-blue-600 border-blue-200" :
-                                        "bg-slate-100 text-slate-500 border-slate-200"
-                        )}>
-                            {isProcessing ? 'Verifying Receipt' : status.replace('_', ' ')}
-                        </Badge>
+        <div className="max-w-5xl mx-auto w-full space-y-8 pb-12">
+            
+            {/* ─── High-End Banner ─── */}
+            <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                        isActive ? "bg-emerald-50 text-emerald-600" :
+                        isRejected ? "bg-red-50 text-red-600" :
+                        isProcessing ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                    )}>
+                        {isActive ? <Shield className="w-6 h-6" /> : isProcessing ? <Clock className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-lg font-black text-slate-900">Track Lifecycle</h1>
+                            <span className={cn(
+                                "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                isActive ? "bg-emerald-50 border-emerald-200 text-emerald-700" :
+                                isProcessing ? "bg-blue-50 border-blue-200 text-blue-700" :
+                                isRejected ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-700"
+                            )}>
+                                {isProcessing ? "In Review" : status.replace('_', ' ')}
+                            </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                            System Trace ID: <span className="font-mono text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded">#{id.slice(-8).toUpperCase()}</span>
+                        </p>
                     </div>
                 </div>
-                <div className="text-right hidden md:block">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Session ID</p>
-                    <p className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">#{id.substring(0, 10).toUpperCase()}</p>
-                </div>
+
+                <Button asChild variant="outline" size="sm" className="rounded-xl h-9 border-slate-200 text-[10px] font-black uppercase tracking-wider gap-2 shadow-sm shrink-0 w-fit">
+                    <Link href="/investments">
+                        <ChevronLeft className="w-3.5 h-3.5" /> Exit Terminal
+                    </Link>
+                </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column: Details */}
-                <div className="lg:col-span-12 xl:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Status Card */}
-                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden md:col-span-1">
-                        <CardContent className="p-0">
-                            <div className={cn(
-                                "h-1.5 w-full",
-                                isPending ? "bg-amber-400" : isActive ? "bg-emerald-500" : "bg-blue-500"
-                            )} />
-                            <div className="p-6 space-y-6">
-                                <div className="flex items-start justify-between">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Investment Plan</p>
-                                        <h3 className="text-xl font-black text-slate-900 leading-tight">{indexName}</h3>
-                                    </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
-                                        <TrendingUp className="w-6 h-6 text-blue-600" />
+            {/* ─── Visual Stepper Pipeline ─── */}
+            <div className="px-4 md:px-8">
+                <div className="relative flex items-center justify-between w-full max-w-3xl mx-auto">
+                    {/* Background Connection Line */}
+                    <div className="absolute left-0 right-0 top-5 h-0.5 bg-slate-100 -z-10" />
+                    <div 
+                        className="absolute left-0 top-5 h-0.5 bg-blue-600 transition-all duration-700 -z-10" 
+                        style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+                    />
+
+                    {steps.map((stp, i) => {
+                        const Icon = stp.icon;
+                        const done = i < currentStep;
+                        const current = i === currentStep;
+                        
+                        return (
+                            <div key={i} className="flex flex-col items-center">
+                                <motion.div
+                                    initial={{ scale: 0.9 }}
+                                    animate={{ scale: current ? 1.1 : 1 }}
+                                    className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-white shadow-sm",
+                                        done ? "border-blue-600 bg-blue-600 text-white" : 
+                                        current ? "border-blue-600 text-blue-600" : "border-slate-200 text-slate-300"
+                                    )}
+                                >
+                                    {done ? <Check className="w-4 h-4 stroke-[3]" /> : <Icon className="w-4 h-4" />}
+                                </motion.div>
+                                <span className={cn(
+                                    "absolute mt-12 text-[9px] font-black uppercase tracking-wider whitespace-nowrap",
+                                    done ? "text-blue-600" : current ? "text-slate-800" : "text-slate-400"
+                                )}>
+                                    {stp.label}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+            
+            {/* Add explicit Spacer for Absolute text above */}
+            <div className="h-8" />
+
+            {/* ─── Main Grid Layout ─── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Column A: Investment Specs */}
+                <div className="space-y-6 flex flex-col">
+                    <Card className="bg-white rounded-3xl border-slate-100 shadow-sm flex-1 overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-110" />
+                        
+                        <CardContent className="p-6 space-y-6 relative">
+                            <div>
+                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.15em] mb-1">Specification</p>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">{indexInfo.name}</h3>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-2xl p-5 space-y-4 border border-slate-100/50">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Commitment</span>
+                                    <span className="text-lg font-black text-slate-900">${amount.toLocaleString()}</span>
+                                </div>
+                                <div className="h-px bg-slate-200/60" />
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Rail</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full bg-[#26A17B] flex items-center justify-center text-[8px] font-bold text-white">T</div>
+                                        <span className="text-xs font-black text-slate-900">{paymentDetails?.network || "USDT"}</span>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</p>
-                                        <p className="text-lg font-black text-slate-900">${amount.toLocaleString()}</p>
-                                    </div>
-                                    <div className="space-y-1 text-right border-l border-slate-200/60 pl-4">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Network</p>
-                                        <p className="text-lg font-black text-slate-900">{paymentDetails?.network || "USDT"}</p>
-                                    </div>
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                    <Clock className="w-4 h-4 text-slate-400" />
+                                    Initialized: {new Date(paymentRequest.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                                 </div>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50 w-fit px-3 py-1 rounded-full border border-slate-100">
-                                        <Clock className="w-3 h-3" />
-                                        Request Logged: {new Date(paymentRequest.createdAt).toLocaleDateString()}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100">
-                                        <Shield className="w-3 h-3 text-emerald-500" />
-                                        Secured Transaction
-                                    </div>
+                                <div className="flex items-center gap-3 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                    <Shield className="w-4 h-4 text-emerald-500" />
+                                    Escrow Locked Security
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Right Action Block */}
-                    <div className="md:col-span-1">
-                        {isPending ? (
-                            <Card className="border-none shadow-xl shadow-blue-500/5 bg-white h-full relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-8 pointer-events-none opacity-5 group-hover:opacity-10 transition-opacity">
-                                    <Wallet className="w-24 h-24 text-blue-600" />
-                                </div>
-                                <div className="p-6 space-y-6 relative h-full flex flex-col">
-                                    <div className="space-y-1">
-                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.1em] flex items-center gap-2">
-                                            <div className="w-1.5 h-6 bg-blue-600 rounded-full" />
-                                            Action Required
-                                        </h3>
-                                        <p className="text-xs font-semibold text-slate-500 leading-relaxed">
-                                            Transfer exactly <span className="text-blue-600 font-black">${amount.toLocaleString()}</span> to the address below.
-                                        </p>
-                                    </div>
+                    {/* Informational Box */}
+                    <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Audit Warning</p>
+                            <p className="text-[10px] font-semibold text-amber-700/80 leading-relaxed">
+                                Verify precision routing. SMC Protocol cannot reverse cryptographic transactions routed outside defined network parameters.
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
-                                    <div className="space-y-4 flex-grow">
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center px-1">
-                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Wallet Destination</Label>
-                                                <button onClick={() => copyToClipboard(paymentDetails?.walletAddress)} className="text-[9px] font-black text-blue-600 uppercase tracking-wider hover:underline transition-all active:scale-95">Copy Address</button>
+                {/* Column B & C: Action Center */}
+                <div className="lg:col-span-2">
+                    <AnimatePresence mode="wait">
+                        {isPending ? (
+                            <motion.div
+                                key="pending"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                            >
+                                <Card className="bg-white rounded-3xl border-slate-100 shadow-lg shadow-slate-200/40 overflow-hidden border-t-4 border-t-blue-600">
+                                    <CardContent className="p-6 md:p-8 space-y-8">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Awaiting Authentication</h3>
                                             </div>
-                                            <div
+                                            <p className="text-sm font-medium text-slate-500">
+                                                Dispatch exactly <span className="font-black text-slate-800">${amount.toLocaleString()}</span> from your institutional wallet to launch node connectivity.
+                                            </p>
+                                        </div>
+
+                                        {/* Wallet Segment */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-end px-1">
+                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Secured Routing Node (Address)</Label>
+                                                <button 
+                                                    onClick={() => copyToClipboard(paymentDetails?.walletAddress)}
+                                                    className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-wider flex items-center gap-1 transition-colors"
+                                                >
+                                                    <Copy className="w-3 h-3" /> Copy
+                                                </button>
+                                            </div>
+                                            
+                                            <div 
                                                 onClick={() => copyToClipboard(paymentDetails?.walletAddress)}
-                                                className="group relative bg-slate-50 hover:bg-white border-2 border-slate-100 hover:border-blue-500/30 rounded-2xl p-4 cursor-pointer transition-all active:scale-[0.98] shadow-sm"
+                                                className="group relative bg-slate-50 border border-slate-100 hover:border-blue-200 rounded-2xl p-5 cursor-pointer transition-all active:scale-[0.99] overflow-hidden text-center"
                                             >
-                                                <p className="text-xs font-mono font-bold text-slate-700 break-all text-center leading-relaxed">
-                                                    {paymentDetails?.walletAddress || "Address not available"}
+                                                <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/30 transition-colors" />
+                                                <p className="relative z-10 text-sm md:text-base font-mono font-black text-slate-800 break-all leading-relaxed">
+                                                    {paymentDetails?.walletAddress || "ADDRESS_MISSING"}
                                                 </p>
-                                                {copied === 'wallet' && (
-                                                    <div className="absolute inset-0 bg-blue-600 flex items-center justify-center rounded-2xl animate-in fade-in zoom-in duration-200">
-                                                        <span className="text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                                                            <CheckCircle className="w-3.5 h-3.5" /> Address Copied
-                                                        </span>
-                                                    </div>
-                                                )}
+                                                
+                                                <AnimatePresence>
+                                                    {copied === 'wallet' && (
+                                                        <motion.div 
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            className="absolute inset-0 bg-blue-600 flex items-center justify-center z-20"
+                                                        >
+                                                            <span className="text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                                                                <Check className="w-4 h-4 stroke-[3]" /> Copied to Ledger
+                                                            </span>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {/* Submission Form */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">TX Hash (TXID)</Label>
-                                                <Input
-                                                    value={txHash}
-                                                    onChange={(e) => setTxHash(e.target.value)}
-                                                    placeholder="0x..."
-                                                    className="h-12 font-mono text-sm border-2 border-slate-100 bg-white focus:ring-4 focus:ring-blue-500/10 rounded-xl"
-                                                />
+                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Transaction ID / Hash</Label>
+                                                <div className="relative">
+                                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                    <Input
+                                                        value={txHash}
+                                                        onChange={e => setTxHash(e.target.value)}
+                                                        placeholder="Enter TX Hash Value"
+                                                        className="pl-10 h-12 font-mono text-sm bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-100 rounded-xl transition-all"
+                                                    />
+                                                </div>
                                             </div>
+
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Proof Document</Label>
+                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Proof Receipt</Label>
                                                 <div
                                                     {...getRootProps()}
                                                     className={cn(
-                                                        "h-12 border-2 border-dashed rounded-xl flex items-center justify-center transition-all cursor-pointer",
-                                                        uploadProof ? "border-emerald-500 bg-emerald-50/30 text-emerald-600" : "border-slate-100 bg-white hover:border-blue-400 text-slate-400",
-                                                        isDragActive && "border-blue-500 bg-blue-50"
+                                                        "h-12 border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200 relative group overflow-hidden",
+                                                        uploadProof ? "border-emerald-500 bg-emerald-50/50 text-emerald-600" : "border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/30 text-slate-500",
+                                                        isDragActive && "border-blue-600 bg-blue-50"
                                                     )}
                                                 >
                                                     <input {...getInputProps()} />
-                                                    <div className="flex items-center gap-2 px-3">
-                                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center">
-                                                            {uploadProof ? <BadgeCheck className="w-5 h-5" /> : <Upload className="w-4 h-4" />}
-                                                        </div>
-                                                        <span className="text-[10px] font-black uppercase tracking-wider truncate max-w-[80px]">
-                                                            {uploadProof ? uploadProof.name : "Attach Receipt"}
+                                                    <div className="flex items-center gap-2.5 px-4 w-full">
+                                                        {uploadProof ? <BadgeCheck className="w-5 h-5 shrink-0" /> : <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform shrink-0" />}
+                                                        <span className="text-[11px] font-black uppercase tracking-wider truncate flex-1 text-left">
+                                                            {uploadProof ? uploadProof.name : "Upload Image/PDF"}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="pt-4">
-                                        <Button
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black h-14 rounded-2xl shadow-xl shadow-blue-500/20 text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50"
+                                        <Button 
                                             onClick={handleSubmit}
                                             disabled={!uploadProof || !txHash || isSubmitting}
+                                            className="w-full h-14 bg-[#0f172a] hover:bg-slate-800 text-white font-black rounded-2xl shadow-lg shadow-slate-200 text-[11px] uppercase tracking-[0.25em] transition-all relative overflow-hidden group disabled:opacity-60"
                                         >
-                                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Complete Terminal"}
+                                            {isSubmitting ? (
+                                                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                                            ) : (
+                                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                                    Commit Node Transaction <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                </span>
+                                            )}
                                         </Button>
-                                    </div>
-                                </div>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
                         ) : (
-                            <Card className="border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden h-full flex items-center justify-center">
-                                <CardContent className="p-10 text-center space-y-6">
-                                    <div className="relative mx-auto w-24 h-24">
-                                        {isActive ? (
-                                            <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-25" />
-                                        ) : isProcessing ? (
-                                            <div className="absolute inset-0 bg-blue-100 rounded-full animate-pulse opacity-40" />
-                                        ) : null}
-                                        <div className={cn(
-                                            "relative w-24 h-24 rounded-full flex items-center justify-center mx-auto border-4",
-                                            isActive ? "bg-emerald-50 border-emerald-100 text-emerald-500" :
-                                                status === 'rejected' ? "bg-red-50 border-red-100 text-red-500" :
-                                                    "bg-blue-50 border-blue-100 text-blue-500"
-                                        )}>
-                                            {isActive ? <CheckCircle className="w-10 h-10" /> :
-                                                status === 'rejected' ? <AlertCircle className="w-10 h-10" /> :
-                                                    <Loader2 className="w-10 h-10 animate-spin" />}
+                            <motion.div
+                                key="completed-status"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="h-full flex flex-col"
+                            >
+                                <Card className="bg-white rounded-3xl border-slate-100 shadow-sm flex-1 flex items-center justify-center overflow-hidden text-center p-8 md:p-12 border-t-4 border-t-blue-600/0 relative">
+                                    {/* Dynamic accent border logic based on state implicitly mapped through contents now */}
+                                    <CardContent className="space-y-8 max-w-sm">
+                                        <div className="relative mx-auto w-28 h-28">
+                                            {isActive ? (
+                                                <>
+                                                    <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-40" />
+                                                    <div className="relative w-28 h-28 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                                                        <Shield className="w-12 h-12" />
+                                                    </div>
+                                                </>
+                                            ) : isRejected ? (
+                                                <div className="relative w-28 h-28 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-600">
+                                                    <AlertCircle className="w-12 h-12" />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="absolute inset-0 bg-blue-100 rounded-full animate-pulse opacity-40" />
+                                                    <div className="relative w-28 h-28 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                                                        <Activity className="w-12 h-12" />
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                                            {isActive ? "Investment Deployed" :
-                                                status === 'rejected' ? "Request Flagged" :
-                                                    "Analyzing Network Proof"}
-                                        </h3>
-                                        <p className="text-xs font-bold text-slate-500 leading-relaxed max-w-[240px] mx-auto uppercase tracking-wide opacity-80">
-                                            {isActive ? "Success. Your funds are now mapped to the selected index terminal." :
-                                                status === 'rejected' ? "The proof provided was invalid. Please contact support." :
-                                                    "The index is verifying your transaction hash. Verification is usually complete within 2-4 hours."}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-2 pt-2">
-                                        <Button asChild variant="outline" className="border-2 font-black text-[10px] uppercase tracking-widest h-11 rounded-xl">
-                                            <Link href="/investments">All Investments</Link>
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                </div>
 
-                {/* Bottom Row / Compact Info */}
-                <div className="lg:col-span-12 space-y-4">
-                    <div className="bg-amber-50/50 border border-amber-100/50 p-4 rounded-2xl flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                            <AlertCircle className="w-5 h-5 text-amber-600" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-1 leading-none">Protocol Advisory</p>
-                            <p className="text-[10px] text-amber-800/80 font-bold leading-relaxed">
-                                Always ensure you are on the <span className="underline font-black">BEP20</span> or <span className="underline font-black">TRC20</span> network as specified. Assets sent to incorrect addresses or networks cannot be recovered by the SMC Protocol.
-                            </p>
-                        </div>
-                    </div>
+                                        <div>
+                                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-3">
+                                                {isActive ? "Liquidity Deployed" :
+                                                 isRejected ? "Validation Revoked" :
+                                                 "Audit Stream Active"}
+                                            </h3>
+                                            <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                                                {isActive ? "Synchronisation complete. Allocated funds are yielding cumulative portfolio growth." :
+                                                 isRejected ? "Network operators detected anomalous cryptographic payloads. Please contact direct technical advocacy." :
+                                                 "Artificial Intelligence validators are performing algorithmic hashing checksums. Typically verified within a 2-4 hour block."}
+                                            </p>
+                                        </div>
+
+                                        <Button asChild variant="outline" className="w-full h-12 rounded-2xl border-slate-200 font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-colors">
+                                            <Link href="/investments">Manage Portfolios</Link>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

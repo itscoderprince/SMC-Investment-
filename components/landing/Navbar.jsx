@@ -47,36 +47,20 @@ const SMCLogo = ({ scrolled }) => (
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-emerald-500/20" />
 
         {/* Animated mini candlestick bars */}
-        <svg viewBox="0 0 32 32" className="relative w-6 h-6 z-10">
-          {/* Candle 1 — red (bearish) */}
-          <rect x="5" y="10" width="3" height="10" rx="0.5" fill="#ef4444" opacity="0.9">
-            <animate attributeName="y" values="10;12;10" dur="2.5s" repeatCount="indefinite" />
-            <animate attributeName="height" values="10;8;10" dur="2.5s" repeatCount="indefinite" />
-          </rect>
+        <svg viewBox="0 0 32 32" className="relative w-6 h-6 z-10" aria-hidden="true">
+          {/* Static candles — no SMIL animations (main-thread expensive) */}
+          <rect x="5" y="10" width="3" height="10" rx="0.5" fill="#ef4444" opacity="0.9" />
           <line x1="6.5" y1="7" x2="6.5" y2="24" stroke="#ef4444" strokeWidth="1" opacity="0.5" />
 
-          {/* Candle 2 — green (bullish, tall) */}
-          <rect x="11" y="6" width="3" height="14" rx="0.5" fill="#10b981" opacity="0.9">
-            <animate attributeName="y" values="6;4;6" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="height" values="14;16;14" dur="2s" repeatCount="indefinite" />
-          </rect>
+          <rect x="11" y="6" width="3" height="14" rx="0.5" fill="#10b981" opacity="0.9" />
           <line x1="12.5" y1="3" x2="12.5" y2="24" stroke="#10b981" strokeWidth="1" opacity="0.5" />
 
-          {/* Candle 3 — green (bullish) */}
-          <rect x="17" y="8" width="3" height="12" rx="0.5" fill="#10b981" opacity="0.9">
-            <animate attributeName="y" values="8;6;8" dur="3s" repeatCount="indefinite" />
-            <animate attributeName="height" values="12;14;12" dur="3s" repeatCount="indefinite" />
-          </rect>
+          <rect x="17" y="8" width="3" height="12" rx="0.5" fill="#10b981" opacity="0.9" />
           <line x1="18.5" y1="4" x2="18.5" y2="24" stroke="#10b981" strokeWidth="1" opacity="0.5" />
 
-          {/* Candle 4 — blue accent (strong bullish) */}
-          <rect x="23" y="4" width="3" height="16" rx="0.5" fill="#3b82f6" opacity="0.9">
-            <animate attributeName="y" values="4;2;4" dur="1.8s" repeatCount="indefinite" />
-            <animate attributeName="height" values="16;18;16" dur="1.8s" repeatCount="indefinite" />
-          </rect>
+          <rect x="23" y="4" width="3" height="16" rx="0.5" fill="#3b82f6" opacity="0.9" />
           <line x1="24.5" y1="2" x2="24.5" y2="24" stroke="#3b82f6" strokeWidth="1" opacity="0.5" />
 
-          {/* Trend arrow overlay */}
           <polyline
             points="4,22 10,16 16,18 27,5"
             fill="none"
@@ -132,6 +116,7 @@ const SMCLogo = ({ scrolled }) => (
         >
           C
         </span>
+        <span className="sr-only">SMC - Smart Management Capital</span>
       </div>
 
     </div>
@@ -245,6 +230,7 @@ const Navbar = () => {
           <div className="flex items-center gap-2.5">
             <div className="hidden md:flex items-center mr-1">
               <button
+                aria-label="Platform Activity"
                 className={cn(
                   "p-2 rounded-lg transition-all duration-300",
                   scrolled
@@ -252,7 +238,7 @@ const Navbar = () => {
                     : "text-slate-400 hover:text-white hover:bg-white/[0.08]"
                 )}
               >
-                <Activity className="h-[18px] w-[18px]" />
+                <Activity aria-hidden="true" className="h-[18px] w-[18px]" />
               </button>
             </div>
 
@@ -261,37 +247,32 @@ const Navbar = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
+                      aria-label="User profile menu"
                       className={cn(
-                        "flex items-center gap-2 p-1 pr-3 rounded-full transition-all border outline-none group",
+                        "flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all duration-300 outline-none group",
                         scrolled
-                          ? "hover:bg-slate-50 border-transparent hover:border-slate-200"
-                          : "hover:bg-white/[0.06] border-transparent hover:border-white/10"
+                          ? "bg-slate-50/50 hover:bg-slate-100/80 border-slate-200 text-slate-800"
+                          : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-200"
                       )}
                     >
-                      <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white/20 group-hover:ring-blue-500/30 transition-all">
+                      <div className="w-7 h-7 bg-blue-600 text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-sm transition-all">
                         {user?.name?.charAt(0) || "U"}
                       </div>
-                      <span
-                        className={cn(
-                          "hidden sm:block text-sm font-semibold transition-colors",
-                          scrolled
-                            ? "text-slate-700 group-hover:text-blue-600"
-                            : "text-slate-300 group-hover:text-white"
-                        )}
-                      >
+                      <span className="hidden sm:block text-xs font-bold tracking-wide">
                         {user?.name?.split(" ")[0]}
                       </span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="w-64 mt-3 rounded-2xl border-slate-200 shadow-2xl bg-white p-2"
+                    sideOffset={8}
+                    className="w-60 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xl transition-all animate-in fade-in-50 slide-in-from-top-2 duration-200"
                   >
-                    <div className="px-4 py-3 mb-2 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl border border-slate-100">
-                      <p className="text-sm font-bold text-slate-900 truncate">
+                    <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800/50 mb-1">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {user?.name}
                       </p>
-                      <p className="text-xs text-slate-500 truncate font-medium">
+                      <p className="text-[10px] text-slate-400 truncate font-semibold mt-0.5">
                         {user?.email}
                       </p>
                     </div>
@@ -303,30 +284,28 @@ const Navbar = () => {
                               ? "/admin/dashboard"
                               : "/dashboard"
                           }
-                          className="flex items-center p-2.5 rounded-xl cursor-pointer hover:bg-blue-50 focus:bg-blue-50"
+                          className="flex items-center p-2 rounded-lg cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 focus:bg-slate-50 dark:focus:bg-slate-900 focus:text-blue-600 dark:focus:text-blue-400 transition-colors"
                         >
-                          <TrendingUp className="mr-3 h-4 w-4 text-blue-500" />
-                          <span className="font-medium">Dashboard</span>
+                          <TrendingUp className="mr-2.5 h-3.5 w-3.5 text-blue-500 shrink-0" />
+                          <span>Dashboard</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
                           href="/kyc"
-                          className="flex items-center p-2.5 rounded-xl cursor-pointer hover:bg-emerald-50 focus:bg-emerald-50"
+                          className="flex items-center p-2 rounded-lg cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 focus:bg-slate-50 dark:focus:bg-slate-900 focus:text-emerald-600 dark:focus:text-emerald-400 transition-colors"
                         >
-                          <Shield className="mr-3 h-4 w-4 text-emerald-500" />
-                          <span className="font-medium">Identity & KYC</span>
+                          <Shield className="mr-2.5 h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          <span>Identity & KYC</span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                      <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
                       <DropdownMenuItem
                         onClick={handleLogout}
-                        className="flex items-center p-2.5 rounded-xl text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer"
+                        className="flex items-center p-2 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 focus:bg-rose-50 dark:focus:bg-rose-950/20 cursor-pointer transition-colors"
                       >
-                        <div className="mr-3 h-4 w-4 flex items-center justify-center">
-                          <X className="h-4 w-4" />
-                        </div>
-                        <span className="font-semibold">Disconnect</span>
+                        <X className="mr-2.5 h-3.5 w-3.5 text-rose-500 shrink-0" />
+                        <span>Disconnect</span>
                       </DropdownMenuItem>
                     </div>
                   </DropdownMenuContent>
@@ -365,6 +344,8 @@ const Navbar = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMenuOpen}
               className={cn(
                 "md:hidden p-2.5 rounded-xl border transition-all duration-300",
                 scrolled
@@ -372,7 +353,7 @@ const Navbar = () => {
                   : "text-slate-300 bg-white/[0.06] backdrop-blur-sm border-white/[0.08] hover:bg-white/[0.12] hover:text-white"
               )}
             >
-              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {isMenuOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}
             </button>
           </div>
         </div>

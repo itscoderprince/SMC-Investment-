@@ -13,30 +13,26 @@ import {
     ArrowRight,
     Info,
     ArrowUpRight,
-    Home,
     Loader2,
     Lock,
     Upload,
-    ArrowDownCircle,
-    BadgeCheck // Added this
+    BadgeCheck,
+    BarChart3,
+    Activity,
+    Target,
+    Globe2,
+    Cpu,
+    ShieldCheck,
+    Clock
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
     CardFooter,
@@ -44,49 +40,47 @@ import {
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useIndices, useInvestmentSummary } from "@/hooks/useApi";
 import { paymentsApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 import { Suspense } from "react";
 
 function InvestContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const indexIdFromUrl = searchParams.get("index");
 
+    // 1. STATE & GLOBAL STORE
+    // We fetch the authenticated user from Zustand store to check KYC verification status
     const { user } = useAuthStore();
     const kycStatus = user?.kycStatus;
+
+    // 2. DATA FETCHING (REACT QUERY POWERED)
+    // useIndices retrieves the available investment products from the API.
+    // By destructuring { indices, loading, error }, we handle the asynchronous state cleanly.
     const { indices, loading: indicesLoading, error: indicesError } = useIndices();
     const { data: summaryData } = useInvestmentSummary();
+
+    // 3. LOCAL UI STATE
+    // These states control the interactive elements of the page (modals, forms, loading spinners)
 
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [amount, setAmount] = useState("");
     const [agreeTerms, setAgreeTerms] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [paymentDetails, setPaymentDetails] = useState(null);
-    const [copied, setCopied] = useState("");
-    const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState("bep20_usdt");
-    const [paymentRequestId, setPaymentRequestId] = useState(null);
-    const [uploadProof, setUploadProof] = useState(null);
-    const [txHash, setTxHash] = useState("");
-    const [isUploadingProof, setIsUploadingProof] = useState(false);
-    const [proofSubmitted, setProofSubmitted] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Handle pre-selected index from URL
     useEffect(() => {
         if (indices && indexIdFromUrl) {
             const found = indices.find(idx => (idx.id || idx._id) === indexIdFromUrl);
@@ -106,12 +100,6 @@ function InvestContent() {
         }
     };
 
-    const copyToClipboard = (text, field) => {
-        navigator.clipboard.writeText(text);
-        setCopied(field);
-        setTimeout(() => setCopied(""), 2000);
-    };
-
     const handleSubmit = async () => {
         if (!selectedIndex || !amount) return;
 
@@ -126,45 +114,19 @@ function InvestContent() {
                 paymentMethod: paymentMethod,
             });
 
-            setPaymentDetails(result.paymentDetails);
-            setPaymentRequestId(result.id || result._id);
-            setShowSuccess(true);
+            // Instead of complex inline steps, direct cleanly to tracking which handles it natively.
+            toast.success("Registry Dispatch Confirmed");
+            setDialogOpen(false);
+            
+            // Wait a beat and redirect to track
+            setTimeout(() => {
+                router.push(`/invest/track/${result.id || result._id}`);
+            }, 300);
         } catch (err) {
-            setError(err.message || 'Failed to create investment request');
+            setError(err.message || 'Pipeline instantiation failed.');
+            toast.error(err.message || "Launch failed.");
         } finally {
             setIsSubmitting(false);
-        }
-    };
-
-    const onDrop = (acceptedFiles) => {
-        setUploadProof(acceptedFiles[0]);
-    };
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: { 'image/*': [], 'application/pdf': [] },
-        multiple: false
-    });
-
-    const handleProofSubmit = async () => {
-        if (!uploadProof || !txHash || !paymentRequestId) return;
-
-        setIsUploadingProof(true);
-        try {
-            const formData = new FormData();
-            formData.append('proofDocument', uploadProof);
-            formData.append('paymentRequestId', paymentRequestId);
-            formData.append('transactionReference', txHash);
-
-            await paymentsApi.uploadProof(formData);
-            toast.success("Proof submitted successfully!");
-            setProofSubmitted(true);
-        } catch (err) {
-            const msg = err.message || 'Failed to upload proof';
-            setError(msg);
-            toast.error(msg);
-        } finally {
-            setIsUploadingProof(false);
         }
     };
 
@@ -172,12 +134,6 @@ function InvestContent() {
         setSelectedIndex(null);
         setAmount("");
         setAgreeTerms(false);
-        setShowSuccess(false);
-        setPaymentDetails(null);
-        setPaymentRequestId(null);
-        setUploadProof(null);
-        setTxHash("");
-        setProofSubmitted(false);
         setError(null);
         setDialogOpen(false);
         setPaymentMethod("bep20_usdt");
@@ -185,400 +141,287 @@ function InvestContent() {
 
     if (indicesLoading) {
         return (
-            <div className="min-h-[400px] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 animate-pulse">Loading Markets...</span>
             </div>
         );
     }
 
     if (indicesError) {
         return (
-            <div className="min-h-[400px] flex items-center justify-center">
-                <div className="text-center">
-                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <p className="text-gray-600">Failed to load indices</p>
-                </div>
+            <div className="min-h-[40vh] flex flex-col items-center justify-center p-6 text-center bg-white border rounded-3xl border-slate-100">
+                <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+                <h3 className="font-black text-slate-900 tracking-tight mb-1">Connectivity Disrupt</h3>
+                <p className="text-xs text-slate-500 max-w-xs">Unable to pull index valuations from standard Oracle.</p>
             </div>
         );
     }
 
-    // const indices = indicesData?.indices || []; // Removed redundant declaration
     const walletBalance = summaryData?.walletBalance || 0;
-
     const currentMin = selectedIndex?.minInvestment || 0;
     const parsedAmount = parseInt(amount.replace(/,/g, "")) || 0;
     const isValidAmount = parsedAmount >= currentMin;
 
-    // Map colors for indices
-    const colorVariants = [
-        { gradient: "from-[#2563eb] to-[#7c3aed]", accentColor: "bg-[#2563eb]" },
-        { gradient: "from-[#10b981] to-[#059669]", accentColor: "bg-[#10b981]" },
-        { gradient: "from-[#7c3aed] to-[#c026d3]", accentColor: "bg-[#7c3aed]" },
-        { gradient: "from-[#f59e0b] to-[#ea580c]", accentColor: "bg-[#f59e0b]" },
+    // Define branding mapping for variety
+    const cardConfig = [
+        { grad: "from-blue-600 to-indigo-600", lightGrad: "bg-blue-50/50", icon: Globe2, iconCol: "text-blue-600" },
+        { grad: "from-emerald-600 to-teal-600", lightGrad: "bg-emerald-50/50", icon: TrendingUp, iconCol: "text-emerald-600" },
+        { grad: "from-violet-600 to-fuchsia-600", lightGrad: "bg-violet-50/50", icon: Cpu, iconCol: "text-violet-600" },
+        { grad: "from-amber-600 to-orange-600", lightGrad: "bg-amber-50/50", icon: Target, iconCol: "text-amber-600" },
     ];
 
     return (
-        <div className="space-y-4 max-w-7xl mx-auto pt-0 pb-2 md:pb-4 px-2 md:px-1">
-            {/* Breadcrumb Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <Breadcrumb className="px-1">
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
-                                <Home className="w-3.5 h-3.5" />
-                                Home
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbPage className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                <TrendingUp className="w-3.5 h-3.5" />
-                                Investment Indices
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
-                <div className="bg-white border rounded-lg px-3 py-1 flex items-center gap-2.5 shadow-sm mr-1">
-                    <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                        <Wallet className="w-3.5 h-3.5 text-blue-600" />
+        <div className="max-w-6xl mx-auto space-y-8 pb-12">
+            
+            {/* ─── Global Dashboard Header ─── */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Execution Floor</span>
+                    </div>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Investment Terminal</h1>
+                </div>
+                
+                <div className="bg-white border border-slate-100 shadow-sm px-4 py-2.5 rounded-2xl flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Wallet className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">Your Balance</p>
-                        <p className="text-xs font-bold text-gray-900 leading-tight">${walletBalance.toLocaleString()}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Allocatable Vault</p>
+                        <p className="text-base font-black text-slate-800 tracking-tight leading-none">${walletBalance.toLocaleString()}</p>
                     </div>
                 </div>
             </div>
 
-            {/* KYC Warning */}
-            {kycStatus !== 'approved' && (
-                <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center">
-                            <AlertCircle className="w-3.5 h-3.5 text-yellow-600" />
+            {/* ─── Compliance Warning ─── */}
+            <AnimatePresence>
+                {kycStatus !== 'approved' && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10 }} 
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-600 shadow-sm">
+                                <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-amber-900 uppercase tracking-tight">Entity Unverified</p>
+                                <p className="text-xs font-medium text-amber-700/80 mt-0.5">Complete standard KYC protocols to enable capital deployments and gateway routing.</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs font-bold text-yellow-800 tracking-tight">KYC Required</p>
-                            <p className="text-[10px] text-yellow-700/80">Complete KYC verification to start investing.</p>
-                        </div>
-                    </div>
-                    <Button asChild variant="ghost" size="sm" className="text-yellow-800 hover:bg-yellow-100 font-bold text-[10px] shrink-0 h-7 px-2">
-                        <Link href="/kyc">Complete Now</Link>
-                    </Button>
-                </div>
-            )}
+                        <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 h-9 font-bold text-xs shadow-sm shrink-0">
+                            <Link href="/kyc">Initialize Audit</Link>
+                        </Button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* No Indices */}
-            {indices.length === 0 && (
-                <div className="text-center py-12">
-                    <p className="text-gray-500">No investment indices available at the moment.</p>
+            {/* ─── Primary Product Matrix ─── */}
+            {indices.length === 0 ? (
+                <div className="py-20 text-center bg-white border border-dashed border-slate-200 rounded-3xl">
+                    <p className="text-sm font-bold text-slate-400">No active instruments available at this synchronization block.</p>
                 </div>
-            )}
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {indices.map((idx, i) => {
+                        const cfg = cardConfig[i % cardConfig.length];
+                        const IconEl = cfg.icon;
 
-            {/* Grid of Indices */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {indices.map((idx, index) => {
-                    const colors = colorVariants[index % colorVariants.length];
-                    return (
-                        <Card key={idx.id || idx._id} className="group border-none shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full bg-white">
-                            <div className={`h-1.5 w-full bg-gradient-to-r ${colors.gradient}`} />
-                            <CardHeader className="py-3">
-                                <div className="flex justify-between items-start">
-                                    <Badge variant="secondary" className="bg-gray-50 text-gray-600 border-gray-100 font-bold text-[9px]">
-                                        {idx.riskLevel?.charAt(0).toUpperCase() + idx.riskLevel?.slice(1)} Risk
-                                    </Badge>
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Weekly ROI</p>
-                                        <p className="text-lg font-black text-green-600 leading-none">{idx.currentReturnRate}%</p>
-                                    </div>
-                                </div>
-                                <CardTitle className="text-lg font-bold text-gray-900 mt-2">{idx.name}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-1 space-y-4">
-                                <div className="p-3 bg-gray-50 rounded-xl flex justify-between items-center">
-                                    <div className="space-y-0.5">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Min. Invest</p>
-                                        <p className="text-sm font-bold text-gray-900">${(idx.minInvestment || 0).toLocaleString()}</p>
-                                    </div>
-                                    {idx.lockPeriod && (
-                                        <div className="text-right space-y-0.5">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lock Period</p>
-                                            <div className="flex items-center justify-end gap-1 text-sm font-bold text-gray-900">
-                                                <Lock className="w-3 h-3 text-gray-400" />
-                                                {idx.lockPeriod}
+                        return (
+                            <motion.div
+                                key={idx.id || idx._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="group relative"
+                            >
+                                <Card className="h-full bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden rounded-3xl">
+                                    
+                                    <div className="p-6 flex-1 flex flex-col">
+                                        {/* Card Top: Category & Returns */}
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm", cfg.lightGrad, cfg.iconCol)}>
+                                                <IconEl className="w-6 h-6" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="flex items-center gap-1 text-emerald-600 justify-end">
+                                                    <TrendingUp className="w-3.5 h-3.5" />
+                                                    <span className="text-xl font-black tracking-tight">{idx.currentReturnRate}%</span>
+                                                </div>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">Est. Weekly Yield</p>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            </CardContent>
 
-                            <CardFooter className="pt-0">
-                                <Dialog open={dialogOpen && (selectedIndex?.id === idx.id || selectedIndex?._id === idx._id)} onOpenChange={(open) => {
-                                    setDialogOpen(open);
-                                    if (!open) resetForm();
-                                }}>
-                                    {kycStatus !== 'approved' ? (
-                                        <Button
-                                            asChild
-                                            className="w-full font-bold shadow-md bg-blue-600 hover:bg-blue-700 text-white h-10"
+                                        {/* Content */}
+                                        <div className="mb-6">
+                                            <h3 className="text-lg font-black text-slate-900 tracking-tight mb-1.5">{idx.name}</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge variant="outline" className="bg-slate-50 border-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-wider">
+                                                    {idx.riskLevel || 'Medium'} RISK
+                                                </Badge>
+                                                {idx.lockPeriod && (
+                                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[9px] font-black uppercase tracking-wider flex gap-1 items-center">
+                                                        <Clock className="w-2.5 h-2.5" /> {idx.lockPeriod}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Spec Grid */}
+                                        <div className="grid grid-cols-2 gap-4 mt-auto bg-slate-50/80 rounded-2xl p-4 border border-slate-100/50">
+                                            <div>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Minimum Cap</p>
+                                                <p className="text-sm font-black text-slate-800">${(idx.minInvestment || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Security</p>
+                                                <p className="text-xs font-bold text-slate-700 flex items-center gap-1 justify-end">
+                                                    Full Cover <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 pt-0">
+                                        <Dialog 
+                                            open={dialogOpen && (selectedIndex?.id === idx.id || selectedIndex?._id === idx._id)} 
+                                            onOpenChange={(open) => {
+                                                if (kycStatus !== 'approved') {
+                                                    router.push("/kyc");
+                                                    return;
+                                                }
+                                                setDialogOpen(open);
+                                                if (!open) resetForm();
+                                            }}
                                         >
-                                            <Link href="/kyc" className="flex items-center justify-center w-full">
-                                                Complete KYC First
-                                                <ArrowUpRight className="ml-2 w-3.5 h-3.5" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                onClick={() => {
-                                                    setSelectedIndex(idx);
-                                                    setDialogOpen(true);
-                                                }}
-                                                className="w-full font-bold shadow-md bg-blue-600 hover:bg-blue-700 text-white h-10"
-                                            >
-                                                Start Investment
-                                                <ArrowUpRight className="ml-2 w-3.5 h-3.5" />
-                                            </Button>
-                                        </DialogTrigger>
-                                    )}
-                                    <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl bg-white">
-                                        {showSuccess && paymentDetails ? (
-                                            proofSubmitted ? (
-                                                <div className="py-8 px-6 animate-in fade-in zoom-in duration-300 text-center">
-                                                    <div className="w-16 h-16 bg-green-500/10 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                                                        <CheckCircle className="w-8 h-8" />
-                                                    </div>
-                                                    <h2 className="text-lg font-black text-slate-900 mb-1 uppercase tracking-tight">Submitted!</h2>
-                                                    <p className="text-xs font-medium text-slate-500 mb-6 leading-relaxed">
-                                                        Proof uploaded successfully. Verification takes ~2-4 hours. Ref: <span className="font-mono text-slate-700">#{paymentRequestId?.substring(0, 8)}</span>
-                                                    </p>
-                                                    <div className="space-y-2">
-                                                        <Button
-                                                            asChild
-                                                            className="w-full bg-slate-900 hover:bg-black font-bold h-11 rounded-xl text-xs uppercase tracking-widest shadow-lg"
-                                                        >
-                                                            <Link href="/investments">Track Status</Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            onClick={resetForm}
-                                                            className="w-full text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-transparent hover:text-slate-600"
-                                                        >
-                                                            Close Window
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col h-full bg-slate-50/50">
-                                                    <div className="p-5 bg-white border-b border-slate-100">
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                                                                    <Wallet className="w-5 h-5 text-blue-600" />
-                                                                </div>
-                                                                <div>
-                                                                    <DialogTitle className="text-sm font-black text-slate-900 uppercase tracking-wide">Deposit Details</DialogTitle>
-                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{paymentDetails.network}</p>
-                                                                </div>
+                                            <DialogTrigger asChild>
+                                                <Button 
+                                                    onClick={() => {
+                                                        if (kycStatus === 'approved') setSelectedIndex(idx);
+                                                    }}
+                                                    className={cn(
+                                                        "w-full h-12 font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-slate-200 rounded-2xl group-hover:shadow-blue-500/10 transition-all",
+                                                        kycStatus !== 'approved' ? "bg-slate-100 text-slate-400 hover:bg-slate-200" : "bg-[#0f172a] hover:bg-blue-600 text-white"
+                                                    )}
+                                                >
+                                                    Launch Deployment <ArrowUpRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                                </Button>
+                                            </DialogTrigger>
+                                            
+                                            <DialogContent className="p-0 overflow-hidden border-none rounded-3xl shadow-2xl bg-white max-w-md">
+                                                <div className="flex flex-col">
+                                                    <div className="bg-[#0f172a] text-white p-6 relative overflow-hidden">
+                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                                        <div className="relative z-10 flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-blue-400">
+                                                                <Target className="w-5 h-5" />
                                                             </div>
-                                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                                                                Active
-                                                            </Badge>
-                                                        </div>
-
-                                                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Amount</span>
-                                                            <span className="text-lg font-black text-slate-900 tracking-tight">${(paymentDetails.amount || 0).toLocaleString()}</span>
+                                                            <div>
+                                                                <DialogTitle className="text-base font-black uppercase tracking-tight text-white">Setup Pipeline</DialogTitle>
+                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{idx.name}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="px-5 pb-0">
+                                                    <div className="p-6 space-y-6">
                                                         {error && (
-                                                            <div className="bg-red-50 border border-red-100 text-red-600 px-3 py-2 rounded-xl text-[10px] font-bold animate-in fade-in slide-in-from-top-1 duration-200">
+                                                            <div className="bg-red-50 border border-red-100 p-2.5 rounded-xl text-red-600 text-[10px] font-bold text-center">
                                                                 {error}
                                                             </div>
                                                         )}
-                                                    </div>
 
-                                                    <div className="p-5 pt-2 space-y-5">
                                                         <div className="space-y-2">
-                                                            <div className="flex justify-between items-center px-1">
-                                                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Wallet Address <span className="text-red-500">*</span></Label>
-                                                                <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider cursor-pointer hover:underline" onClick={() => copyToClipboard(paymentDetails.walletAddress, 'wallet')}>Tap to copy</span>
-                                                            </div>
-                                                            <div
-                                                                onClick={() => copyToClipboard(paymentDetails.walletAddress, 'wallet')}
-                                                                className="group relative bg-white border border-slate-200 hover:border-blue-500/30 rounded-xl p-3 cursor-pointer transition-all active:scale-[0.98]"
-                                                            >
-                                                                <p className="text-xs font-mono font-bold text-slate-700 break-all text-center leading-relaxed">
-                                                                    {paymentDetails.walletAddress}
-                                                                </p>
-                                                                {copied === 'wallet' && (
-                                                                    <div className="absolute inset-0 bg-blue-600 flex items-center justify-center rounded-xl animate-in fade-in duration-200">
-                                                                        <span className="text-white text-xs font-bold flex items-center gap-1">
-                                                                            <Check className="w-3 h-3" /> Copied
-                                                                        </span>
-                                                                    </div>
+                                                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 pl-1">Deployment Scale <span className="text-red-500">*</span></Label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-300">$</span>
+                                                                <Input
+                                                                    value={amount}
+                                                                    onChange={handleAmountChange}
+                                                                    placeholder="0"
+                                                                    className="h-14 pl-9 text-xl font-black border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 rounded-2xl transition-all"
+                                                                />
+                                                                {!isValidAmount && amount && (
+                                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-lg">
+                                                                        Min: ${idx.minInvestment?.toLocaleString()}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
 
-                                                        <div className="space-y-3">
-                                                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Upload Proof <span className="text-red-500">*</span></Label>
-
-                                                            <div className="grid gap-3">
-                                                                <Input
-                                                                    value={txHash}
-                                                                    onChange={(e) => setTxHash(e.target.value)}
-                                                                    placeholder="Paste Transaction Hash (TxID)"
-                                                                    className="h-10 text-[10px] font-bold bg-white border-slate-200 rounded-lg placeholder:text-slate-400 font-mono"
-                                                                />
-
-                                                                <div
-                                                                    {...getRootProps()}
-                                                                    className={cn(
-                                                                        "h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer bg-white",
-                                                                        uploadProof ? "border-emerald-500/50 bg-emerald-50/10" : "border-slate-200 hover:border-blue-400 hover:bg-blue-50/5",
-                                                                        isDragActive && "border-blue-500 bg-blue-50/50"
-                                                                    )}
-                                                                >
-                                                                    <input {...getInputProps()} />
-                                                                    {uploadProof ? (
-                                                                        <div className="text-center px-4">
-                                                                            <BadgeCheck className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                                                                            <p className="text-[10px] font-bold text-emerald-600 truncate max-w-[180px]">{uploadProof.name}</p>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Protocol Network <span className="text-red-500">*</span></Label>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                {[
+                                                                    { id: 'bep20_usdt', label: 'BSC Scan', type: 'BEP-20' },
+                                                                    { id: 'trc20_usdt', label: 'Tron Grid', type: 'TRC-20' }
+                                                                ].map(net => (
+                                                                    <button
+                                                                        key={net.id}
+                                                                        onClick={() => setPaymentMethod(net.id)}
+                                                                        className={cn(
+                                                                            "relative p-4 rounded-2xl border-2 text-left transition-all duration-300",
+                                                                            paymentMethod === net.id ? "border-blue-600 bg-blue-50/50 shadow-sm" : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50"
+                                                                        )}
+                                                                    >
+                                                                        <div className="flex justify-between items-start mb-2">
+                                                                            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px]", paymentMethod === net.id ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400")}>
+                                                                                USDT
+                                                                            </div>
+                                                                            {paymentMethod === net.id && <CheckCircle className="w-4 h-4 text-blue-600 fill-blue-50" />}
                                                                         </div>
-                                                                    ) : (
-                                                                        <div className="text-center">
-                                                                            <Upload className="w-5 h-5 text-slate-300 mx-auto mb-1" />
-                                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Upload Receipt</p>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+                                                                        <p className={cn("text-[10px] font-black uppercase tracking-wide", paymentMethod === net.id ? "text-blue-700" : "text-slate-700")}>{net.label}</p>
+                                                                        <p className="text-[9px] font-bold text-slate-400">{net.type}</p>
+                                                                    </button>
+                                                                ))}
                                                             </div>
                                                         </div>
 
-                                                        <div className="pt-2">
-                                                            <Button
-                                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black h-11 rounded-xl shadow-lg shadow-blue-500/20 text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-                                                                onClick={handleProofSubmit}
-                                                                disabled={!uploadProof || !txHash || isUploadingProof || !paymentRequestId}
-                                                            >
-                                                                {isUploadingProof ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Submit"}
-                                                            </Button>
-                                                            <button onClick={resetForm} className="w-full text-center mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600">
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        ) : (
-                                            <div className="flex flex-col h-full bg-white">
-                                                <div className="px-6 pt-6 pb-2">
-                                                    <div className="flex items-center gap-3 mb-1">
-                                                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                                                            <TrendingUp className="w-5 h-5 text-blue-600" />
-                                                        </div>
-                                                        <div>
-                                                            <DialogTitle className="text-sm font-black text-slate-900 uppercase tracking-wide">Configure Investment</DialogTitle>
-                                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                                Index: <span className="text-blue-600">{selectedIndex?.name}</span>
+                                                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex gap-3">
+                                                            <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                                            <p className="text-[10px] font-medium text-slate-500 leading-relaxed">
+                                                                Confirmation will instantiate a pending security lock. Assets must be manually dispatched to the generated endpoint in the next step.
                                                             </p>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div className="px-6 py-4 space-y-5">
-                                                    {error && (
-                                                        <div className="bg-red-50 border border-red-100 text-red-600 px-3 py-2 rounded-lg text-[10px] font-bold">
-                                                            {error}
+                                                    <div className="p-6 pt-0">
+                                                        <div className="flex items-center gap-2.5 mb-4 px-1">
+                                                            <Checkbox id="terms" checked={agreeTerms} onCheckedChange={setAgreeTerms} className="w-4 h-4 border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" />
+                                                            <Label htmlFor="terms" className="text-[10px] font-bold text-slate-500 cursor-pointer select-none leading-none">
+                                                                Authorize contract instantiation & accept risk mandates.
+                                                            </Label>
                                                         </div>
-                                                    )}
-
-                                                    <div className="space-y-2">
-                                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Investment Amount <span className="text-red-500">*</span></Label>
-                                                        <div className="relative group">
-                                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-300 group-focus-within:text-blue-600 transition-colors">$</span>
-                                                            <Input
-                                                                value={amount}
-                                                                onChange={handleAmountChange}
-                                                                placeholder="0"
-                                                                className="h-14 pl-9 text-xl font-black border-slate-100 bg-slate-50/50 focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
-                                                            />
-                                                            {!isValidAmount && amount && (
-                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md">
-                                                                    Min: ${selectedIndex?.minInvestment?.toLocaleString()}
+                                                        
+                                                        <Button
+                                                            onClick={handleSubmit}
+                                                            disabled={!isValidAmount || !agreeTerms || isSubmitting}
+                                                            className="w-full h-14 rounded-2xl bg-[#0f172a] hover:bg-blue-600 text-white font-black shadow-xl shadow-slate-200 text-[11px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 active:scale-[0.98]"
+                                                        >
+                                                            {isSubmitting ? (
+                                                                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                                                            ) : (
+                                                                <span className="flex items-center justify-center gap-2">
+                                                                    Initiate Contract <ArrowRight className="w-4 h-4" />
                                                                 </span>
                                                             )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Select Network <span className="text-red-500">*</span></Label>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            {['bep20_usdt', 'trc20_usdt'].map(net => (
-                                                                <button
-                                                                    key={net}
-                                                                    onClick={() => setPaymentMethod(net)}
-                                                                    className={cn(
-                                                                        "relative p-3 rounded-xl border-2 text-left transition-all duration-200 group",
-                                                                        paymentMethod === net ? "border-blue-600 bg-blue-50/30" : "border-slate-100 bg-white hover:border-slate-200"
-                                                                    )}
-                                                                >
-                                                                    <div className="flex justify-between items-start mb-2">
-                                                                        <div className={cn("w-6 h-6 rounded-full flex items-center justify-center transition-colors", paymentMethod === net ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200")}>
-                                                                            <TrendingUp className="w-3 h-3" />
-                                                                        </div>
-                                                                        {paymentMethod === net && <CheckCircle className="w-4 h-4 text-blue-600" />}
-                                                                    </div>
-                                                                    <p className={cn("text-[10px] font-black uppercase tracking-wider mb-0.5", paymentMethod === net ? "text-blue-700" : "text-slate-600")}>
-                                                                        {net === 'bep20_usdt' ? 'BNB Smart Chain' : 'TRON Network'}
-                                                                    </p>
-                                                                    <p className="text-[9px] text-slate-400 font-bold">USDT</p>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="bg-amber-50/50 rounded-xl p-3 flex gap-3 border border-amber-100">
-                                                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                                                        <p className="text-[10px] text-amber-800/80 leading-relaxed font-medium">
-                                                            <span className="font-bold">Note:</span> This is an offline transaction. Transfer funds manually after confirming.
-                                                        </p>
+                                                        </Button>
                                                     </div>
                                                 </div>
-
-                                                <div className="p-6 pt-2 bg-white">
-                                                    <div className="flex items-center gap-2 mb-4 px-1">
-                                                        <Checkbox id="terms" checked={agreeTerms} onCheckedChange={setAgreeTerms} className="w-4 h-4 border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" />
-                                                        <Label htmlFor="terms" className="text-[10px] font-bold text-slate-500 cursor-pointer select-none flex items-center gap-1">
-                                                            I accept the investment terms & risks <span className="text-red-500">*</span>
-                                                        </Label>
-                                                    </div>
-                                                    <Button
-                                                        onClick={handleSubmit}
-                                                        disabled={!isValidAmount || !agreeTerms || isSubmitting}
-                                                        className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/20 text-xs uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                                    >
-                                                        {isSubmitting ? (
-                                                            <span className="flex items-center gap-2">
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                                Processing...
-                                                            </span>
-                                                        ) : "Confirm Investment"}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </DialogContent>
-                                </Dialog>
-                            </CardFooter>
-                        </Card>
-                    );
-                })}
-            </div>
-
-
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
@@ -586,8 +429,9 @@ function InvestContent() {
 export default function InvestPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-[400px] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Buffering Gateway...</p>
             </div>
         }>
             <InvestContent />

@@ -1,4 +1,4 @@
-"use client";
+// Server Component — no hooks, no browser APIs, fully SSR-able
 
 import {
     Shield,
@@ -46,8 +46,8 @@ const ProtocolStep = ({ step, title, description, icon: Icon, time, align, isFir
                 )}>
                     <Icon className={cn(
                         "w-5 h-5 md:w-7 md:h-7 transition-colors duration-300",
-                        isFirst ? "text-blue-400" : "text-slate-500 group-hover:text-blue-400"
-                    )} />
+                        isFirst ? "text-blue-400" : "text-slate-400 group-hover:text-blue-400"
+                    )} aria-hidden="true" />
                 </div>
                 {isFirst && <span className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping -z-10"></span>}
             </div>

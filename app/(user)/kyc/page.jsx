@@ -50,7 +50,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useKYC } from "@/hooks/useApi";
 import { useAuthStore } from "@/store/authStore";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 // File Upload Zone Component
 function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.jpeg,.png,.pdf" }) {
@@ -291,26 +291,11 @@ export default function KYCPage() {
     const isResubmit = status === 'rejected';
 
     return (
-        <div className="max-w-7xl mx-auto space-y-4 pt-0 pb-2 md:pb-4 px-2 md:px-1">
+        <div className="w-full space-y-4 pt-0 pb-2 md:pb-4 px-2 md:px-1">
             {/* Compact Breadcrumb Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <Breadcrumb className="px-1">
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/dashboard" className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
-                                <Home className="w-3.5 h-3.5" />
-                                Home
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbPage className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                KYC Verification
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+                <div className="pt-1">
+                </div>
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 font-bold text-[10px]">VERIFICATION</Badge>
                     <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-100 font-bold text-[10px]">STEP 1 OF 1</Badge>

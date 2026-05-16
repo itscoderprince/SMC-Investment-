@@ -21,7 +21,13 @@ const Sparkline = ({ points, color }) => {
     }).join(' ');
 
     return (
-        <svg width={width} height={height} className="overflow-visible">
+        <svg 
+            width={width} 
+            height={height} 
+            className="overflow-visible"
+            role="img"
+            aria-label="Investment performance sparkline chart"
+        >
             <path
                 d={pathData}
                 fill="none"
@@ -55,11 +61,12 @@ const IndexCard = ({ id, slug, name, currentReturnRate, description, icon, point
             <div className="p-6 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-6">
                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                        <Icon size={20} />
+                        <Icon size={20} aria-hidden="true" />
                     </div>
                     <div className="text-right">
                         <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-sm">
-                            <TrendingUp size={14} />
+                            <TrendingUp size={14} aria-hidden="true" />
+                            <span className="sr-only">Growth rate:</span>
                             +{currentReturnRate}%
                         </div>
                     </div>
@@ -89,11 +96,12 @@ const IndexCard = ({ id, slug, name, currentReturnRate, description, icon, point
 
                     <Button
                         asChild
+                        aria-label={`View details for ${name} investment index`}
                         className="w-full h-10 bg-white/5 hover:bg-blue-600 text-white font-medium rounded-xl border border-white/10 hover:border-blue-500/50 transition-all text-sm"
                     >
                         <Link href={`/indices/${slug || id}`}>
                             View Details
-                            <ArrowUpRight size={14} className="ml-2 opacity-50" />
+                            <ArrowUpRight size={14} aria-hidden="true" className="ml-2 opacity-50" />
                         </Link>
                     </Button>
                 </div>
@@ -140,7 +148,7 @@ const IndicesPreview = () => {
 
                 {indices.length === 0 && !loading ? (
                     <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl">
-                        <p className="text-slate-500 font-medium">No active investment indices available at the moment.</p>
+                        <p className="text-slate-400 font-medium">No active investment indices available at the moment.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
