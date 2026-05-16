@@ -59,7 +59,7 @@ import { useAdminWithdrawals } from "@/hooks/useApi";
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     if (status === "completed" || status === "approved") {
         return (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-medium py-0.5">
@@ -90,7 +90,7 @@ function StatusBadge({ status }) {
             Pending
         </Badge>
     );
-}
+});
 
 export default function WithdrawalsPage() {
     const queryClient = useQueryClient();
@@ -115,20 +115,20 @@ export default function WithdrawalsPage() {
         setMounted(true);
     }, []);
 
-    const stats = [
+    const stats = React.useMemo(() => [
         { title: "Pending Payout", value: pagination?.pendingTotal ?? 0, icon: Clock, color: "text-white", bg: "bg-blue-600" },
         { title: "Processed Total", value: pagination?.processedTotal ?? 0, icon: CheckCircle, color: "text-white", bg: "bg-green-600" },
         { title: "Total Withdrawal", value: pagination?.totalAmount ? `$${pagination.totalAmount.toLocaleString()}` : "$0", icon: ArrowDownLeft, color: "text-white", bg: "bg-purple-600" },
         { title: "Rejected", value: pagination?.rejectedTotal ?? 0, icon: XCircle, color: "text-white", bg: "bg-red-600" },
-    ];
+    ], [pagination]);
 
-    const handleViewDetails = (req) => {
+    const handleViewDetails = React.useCallback((req) => {
         setSelectedRequest(req);
         setTxnRef(req.transactionReference || "");
         setIsSheetOpen(true);
-    };
+    }, []);
 
-    const handleAction = async (id, status) => {
+    const handleAction = React.useCallback(async (id, status) => {
         try {
             if (status === 'approved') {
                 // Allow approval without manual reference, fallback to auto-generated
@@ -154,7 +154,7 @@ export default function WithdrawalsPage() {
         } catch (err) {
             toast.error(err.message || "Action failed");
         }
-    };
+    }, [txnRef, selectedRequest, queryClient, refetch]);
 
     return (
         <div className="space-y-6">

@@ -69,11 +69,11 @@ export default function ReturnsManagementPage() {
         setMounted(true);
     }, []);
 
-    const statCards = [
+    const statCards = React.useMemo(() => [
         { title: "Total Distributed", value: `$${(stats?.totalDistributed || 0).toLocaleString()}`, icon: DollarSign, color: "text-white", bg: "bg-green-600" },
         { title: "Total Transactions", value: (stats?.totalCount || 0).toLocaleString(), icon: Activity, color: "text-white", bg: "bg-blue-600" },
         // Add more stats if available
-    ];
+    ], [stats]);
 
     return (
         <div className="space-y-6">

@@ -53,7 +53,7 @@ import { useAuthStore } from "@/store/authStore";
 import { toast } from "react-hot-toast";
 
 // File Upload Zone Component
-function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.jpeg,.png,.pdf" }) {
+const FileUploadZone = React.memo(function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.jpeg,.png,.pdf" }) {
     const inputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -67,16 +67,7 @@ function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.j
         setIsDragging(false);
     }, []);
 
-    const handleDrop = useCallback((e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const droppedFile = e.dataTransfer.files[0];
-        if (droppedFile) {
-            validateAndSetFile(droppedFile);
-        }
-    }, []);
-
-    const validateAndSetFile = (selectedFile) => {
+    const validateAndSetFile = useCallback((selectedFile) => {
         if (selectedFile.size > 5 * 1024 * 1024) {
             toast.error("File size must be less than 5MB");
             return;
@@ -87,18 +78,27 @@ function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.j
             return;
         }
         onFileSelect(selectedFile);
-    };
+    }, [onFileSelect]);
 
-    const handleFileChange = (e) => {
+    const handleDrop = useCallback((e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const droppedFile = e.dataTransfer.files[0];
+        if (droppedFile) {
+            validateAndSetFile(droppedFile);
+        }
+    }, [validateAndSetFile]);
+
+    const handleFileChange = useCallback((e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) validateAndSetFile(selectedFile);
-    };
+    }, [validateAndSetFile]);
 
-    const formatFileSize = (bytes) => {
+    const formatFileSize = useCallback((bytes) => {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
         return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-    };
+    }, []);
 
     return (
         <div className="space-y-3">
@@ -114,6 +114,9 @@ function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.j
                         ? "border-[#2563eb] bg-blue-50/50"
                         : "border-gray-200 hover:border-[#2563eb] hover:bg-gray-50 bg-white"
                         }`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Upload ${label}`}
                 >
                     <input
                         ref={inputRef}
@@ -121,11 +124,12 @@ function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.j
                         accept={accept}
                         onChange={handleFileChange}
                         className="hidden"
+                        aria-hidden="true"
                     />
                     <div className="flex flex-col items-center gap-3">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-sm ${isDragging ? "bg-[#2563eb] text-white" : "bg-white text-gray-400 group-hover:text-[#2563eb]"
                             }`}>
-                            <Upload className="w-6 h-6" />
+                            <Upload className="w-6 h-6" aria-hidden="true" />
                         </div>
                         <div>
                             <p className="text-sm font-bold text-gray-900">
@@ -145,7 +149,7 @@ function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.j
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <FileCheck className="w-6 h-6 text-[#2563eb]" />
+                            <FileCheck className="w-6 h-6 text-[#2563eb]" aria-hidden="true" />
                         )}
                     </div>
 
@@ -157,14 +161,15 @@ function FileUploadZone({ label, file, onFileSelect, onRemove, accept = ".jpg,.j
                     <button
                         onClick={onRemove}
                         className="p-2.5 hover:bg-red-50 rounded-xl transition-colors group"
+                        aria-label={`Remove ${label} file`}
                     >
-                        <X className="w-5 h-5 text-gray-400 group-hover:text-red-500" />
+                        <X className="w-5 h-5 text-gray-400 group-hover:text-red-500" aria-hidden="true" />
                     </button>
                 </div>
             )}
         </div>
     );
-}
+});
 
 export default function KYCPage() {
     const { refreshUser } = useAuthStore();
@@ -179,7 +184,7 @@ export default function KYCPage() {
 
     const canSubmit = documentType && documentNumber.length >= 4 && frontFile && backFile && !isUploading;
 
-    const handleSubmit = async () => {
+    const handleSubmit = React.useCallback(async () => {
         if (!canSubmit) {
             if (!documentType) toast.error("Please select a document type");
             if (documentNumber.length < 4) toast.error("Document number must be at least 4 characters");
@@ -211,7 +216,7 @@ export default function KYCPage() {
         } finally {
             setIsUploading(false);
         }
-    };
+    }, [canSubmit, documentType, documentNumber, frontFile, backFile, status, upload, resubmit, refreshUser]);
 
     if (kycLoading) {
         return (
@@ -414,7 +419,7 @@ export default function KYCPage() {
                                     Submission Guidelines
                                 </AccordionTrigger>
                                 <AccordionContent className="pt-2">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-3" aria-label="Submission Guidelines">
                                         {[
                                             "Government issued original ID only",
                                             "No digital copies or screenshots",
@@ -423,12 +428,12 @@ export default function KYCPage() {
                                             "File size should be under 5MB",
                                             "Supported: JPG, PNG, PDF"
                                         ].map((tip, i) => (
-                                            <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
-                                                <div className="w-1 h-1 rounded-full bg-blue-500" />
+                                            <li key={i} className="flex items-center gap-2 text-xs text-gray-500">
+                                                <span className="w-1 h-1 rounded-full bg-blue-500" aria-hidden="true" />
                                                 {tip}
-                                            </div>
+                                            </li>
                                         ))}
-                                    </div>
+                                    </ul>
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>

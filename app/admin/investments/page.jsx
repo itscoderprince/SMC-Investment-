@@ -64,7 +64,7 @@ import { adminApi } from "@/lib/api";
 
 
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     if (status === "active") {
         return (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-medium py-0.5">
@@ -87,10 +87,11 @@ function StatusBadge({ status }) {
             Closed
         </Badge>
     );
-}
+});
 
 // Added CheckCircle2 for the badge
-function CheckCircle2(props) {
+// Added CheckCircle2 for the badge
+const CheckCircle2 = React.memo(function CheckCircle2(props) {
     return (
         <svg
             {...props}
@@ -108,7 +109,7 @@ function CheckCircle2(props) {
             <path d="m9 12 2 2 4-4" />
         </svg>
     )
-}
+});
 
 import { useAdminInvestments } from "@/hooks/useApi";
 
@@ -137,19 +138,19 @@ export default function InvestmentsManagementPage() {
         setMounted(true);
     }, []);
 
-    const stats = [
+    const stats = React.useMemo(() => [
         { title: "Active Assets", value: `$${((apiStats?.totalActiveAmount || 0) / 1000000).toFixed(2)} M`, icon: TrendingUp, color: "text-white", bg: "bg-blue-600" },
         { title: "Today's Profit", value: `+$${(apiStats?.todayProfit || 0).toLocaleString()}`, icon: BadgePercent, color: "text-white", bg: "bg-green-600" },
         { title: "Total Users", value: (apiStats?.totalInvestors || 0).toLocaleString(), icon: Users, color: "text-white", bg: "bg-purple-600" },
         { title: "Pending Exit", value: (apiStats?.pendingExits || 0).toString(), icon: Clock, color: "text-white", bg: "bg-red-600" },
-    ];
+    ], [apiStats]);
 
-    const handleViewDetails = (inv) => {
+    const handleViewDetails = React.useCallback((inv) => {
         setSelectedInv(inv);
         setIsSheetOpen(true);
-    };
+    }, []);
 
-    const handleManualReturn = async (e) => {
+    const handleManualReturn = React.useCallback(async (e) => {
         e.preventDefault();
         if (!selectedInv) return;
 
@@ -171,7 +172,7 @@ export default function InvestmentsManagementPage() {
         } finally {
             setActionLoading(null);
         }
-    };
+    }, [selectedInv, manualReturnData, refetch]);
 
     return (
         <div className="space-y-6">

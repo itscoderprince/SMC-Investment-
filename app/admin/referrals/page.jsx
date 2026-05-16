@@ -52,15 +52,17 @@ export default function AdminReferralsPage() {
     const stats = adminReferralData?.stats || { totalReferrals: 0, totalBonusCredited: 0, activeReferrersCount: 0 };
     const referrals = adminReferralData?.referrals || [];
 
-    const filteredReferrals = referrals.filter(ref => {
-        const query = searchQuery.toLowerCase();
-        return (
-            ref.referrerId?.name?.toLowerCase().includes(query) ||
-            ref.referrerId?.email?.toLowerCase().includes(query) ||
-            ref.referredUserId?.name?.toLowerCase().includes(query) ||
-            ref.referredUserId?.email?.toLowerCase().includes(query)
-        );
-    });
+    const filteredReferrals = React.useMemo(() => {
+        return referrals.filter(ref => {
+            const query = searchQuery.toLowerCase();
+            return (
+                ref.referrerId?.name?.toLowerCase().includes(query) ||
+                ref.referrerId?.email?.toLowerCase().includes(query) ||
+                ref.referredUserId?.name?.toLowerCase().includes(query) ||
+                ref.referredUserId?.email?.toLowerCase().includes(query)
+            );
+        });
+    }, [referrals, searchQuery]);
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto px-4 lg:px-6">

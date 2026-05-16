@@ -56,7 +56,7 @@ const fmt = (val) => Number(val || 0).toLocaleString("en-US", { minimumFractionD
 
 // --- Sub-components ---
 
-function CompactBadge({ status }) {
+const CompactBadge = React.memo(function CompactBadge({ status }) {
     const cfg = STATUS_CFG[status] || STATUS_CFG.pending;
     return (
         <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0", cfg.bg, cfg.text, cfg.border)}>
@@ -64,10 +64,10 @@ function CompactBadge({ status }) {
             {cfg.label}
         </span>
     );
-}
+});
 
 // List View Row
-function PortfolioRow({ item }) {
+const PortfolioRow = React.memo(function PortfolioRow({ item }) {
     const isRequest = item.isRequest;
     const roi = !isRequest && item.amount > 0 ? ((item.totalReturns / item.amount) * 100) : 0;
     const detailUrl = isRequest ? `/invest/track/${item.id || item._id}` : `/invest/track/${item.id || item._id}`; 
@@ -84,11 +84,12 @@ function PortfolioRow({ item }) {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             className="group flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-all relative"
+            role="row"
         >
             {/* Primary Branding */}
             <div className="flex-1 min-w-0 flex items-center gap-3">
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isRequest ? "bg-orange-50 text-orange-600" : "bg-emerald-50 text-emerald-600")}>
-                    {isRequest ? <CreditCard className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+                    {isRequest ? <CreditCard className="w-5 h-5" aria-hidden="true" /> : <TrendingUp className="w-5 h-5" aria-hidden="true" />}
                 </div>
                 <div className="min-w-0">
                     <h4 className="text-sm font-black text-slate-900 leading-tight truncate group-hover:text-blue-600 transition-colors">
@@ -117,7 +118,7 @@ function PortfolioRow({ item }) {
                         </span>
                         {!isRequest && item.totalReturns > 0 && (
                             <span className="text-[9px] font-black text-emerald-600 flex items-center gap-0.5 mt-0.5">
-                                <Zap className="w-2 h-2 fill-current" /> +{roi.toFixed(2)}%
+                                <Zap className="w-2 h-2 fill-current" aria-hidden="true" /> +{roi.toFixed(2)}%
                             </span>
                         )}
                     </div>
@@ -128,17 +129,17 @@ function PortfolioRow({ item }) {
                 </div>
 
                 <Button asChild variant="ghost" size="sm" className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 p-0 transition-all group-hover:translate-x-0.5">
-                    <Link href={isRequest ? `/invest/track/${item.id || item._id}` : `/invest/track/${item.id || item._id}`}>
-                        <ArrowRight className="w-4 h-4" />
+                    <Link href={isRequest ? `/invest/track/${item.id || item._id}` : `/invest/track/${item.id || item._id}`} aria-label={`Track ${item.index?.name || "Manual Deposit"}`}>
+                        <ArrowRight className="w-4 h-4" aria-hidden="true" />
                     </Link>
                 </Button>
             </div>
         </motion.div>
     );
-}
+});
 
 // Grid View Card
-function PortfolioCard({ item }) {
+const PortfolioCard = React.memo(function PortfolioCard({ item }) {
     const isRequest = item.isRequest;
     const roi = !isRequest && item.amount > 0 ? ((item.totalReturns / item.amount) * 100) : 0;
     const url = isRequest ? `/invest/track/${item.id || item._id}` : `/invest/track/${item.id || item._id}`;
@@ -184,10 +185,10 @@ function PortfolioCard({ item }) {
             </div>
 
             {/* Actions */}
-            <Link href={url} className="absolute inset-0 z-10" aria-label="View details" />
+            <Link href={url} className="absolute inset-0 z-10" aria-label={`View details for ${item.index?.name || "Manual Deposit"}`} />
         </motion.div>
     );
-}
+});
 
 
 // --- Main Page ---
@@ -208,7 +209,7 @@ export default function InvestmentsPage() {
     const firstPending = pendingPayments.find(p => p.status === 'pending' || p.status === 'proof_uploaded');
     const visibleRequests = pendingPayments.filter(req => req.status !== 'approved');
 
-    const allItems = [
+    const allItems = React.useMemo(() => [
         ...visibleRequests.map(req => ({
             id: req.id,
             _id: req.id,
@@ -223,9 +224,9 @@ export default function InvestmentsPage() {
             ...inv,
             isRequest: false
         }))
-    ];
+    ], [visibleRequests, investments]);
 
-    const filtered = allItems.filter(inv => {
+    const filtered = React.useMemo(() => allItems.filter(inv => {
         const indexName = inv.index?.name || '';
         const matchesSearch = indexName.toLowerCase().includes(searchQuery.toLowerCase()) ||
             ((inv.id || inv._id) && (inv.id || inv._id).toLowerCase().includes(searchQuery.toLowerCase()));
@@ -239,7 +240,7 @@ export default function InvestmentsPage() {
             }
         }
         return matchesSearch && matchesTab;
-    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [allItems, searchQuery, activeTabLower]);
 
     const totalInvested = summaryData?.overview?.totalInvested || 0;
     const totalReturns = summaryData?.overview?.totalReturns || 0;

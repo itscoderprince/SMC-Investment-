@@ -65,7 +65,7 @@ import { Label } from "@/components/ui/label";
 
 
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     if (status === "active") {
         return (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-medium py-0.5">
@@ -80,9 +80,9 @@ function StatusBadge({ status }) {
             Hidden
         </Badge>
     );
-}
+});
 
-function VolatilityBadge({ level }) {
+const VolatilityBadge = React.memo(function VolatilityBadge({ level }) {
     const l = level?.toLowerCase() || "medium";
     const colors = {
         "very low": "bg-blue-50 text-blue-700 border-blue-100",
@@ -96,7 +96,7 @@ function VolatilityBadge({ level }) {
             {l}
         </Badge>
     );
-}
+});
 
 import { useAdminIndices } from "@/hooks/useApi";
 
@@ -137,7 +137,7 @@ export default function IndicesManagementPage() {
         search: searchQuery
     });
 
-    const handleOpenEdit = (idx) => {
+    const handleOpenEdit = React.useCallback((idx) => {
         setSelectedIdx(idx);
         setFormData({
             name: idx.name || "",
@@ -154,9 +154,9 @@ export default function IndicesManagementPage() {
             activeInvestors: idx.activeInvestors || 0
         });
         setIsSheetOpen(true);
-    };
+    }, []);
 
-    const handleOpenCreate = () => {
+    const handleOpenCreate = React.useCallback(() => {
         setSelectedIdx(null);
         setFormData({
             name: "",
@@ -173,9 +173,9 @@ export default function IndicesManagementPage() {
             activeInvestors: 0
         });
         setIsSheetOpen(true);
-    };
+    }, []);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = React.useCallback(async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
@@ -192,9 +192,9 @@ export default function IndicesManagementPage() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [selectedIdx, formData, update, create, refetch]);
 
-    const handleDelete = async (id) => {
+    const handleDelete = React.useCallback(async (id) => {
         if (!confirm("Are you sure you want to deactivate this index?")) return;
         try {
             await remove(id);
@@ -202,18 +202,18 @@ export default function IndicesManagementPage() {
         } catch (err) {
             alert(err.message || "Failed to deactivate");
         }
-    };
+    }, [remove, refetch]);
 
-    const handleOpenDistribute = (idx) => {
+    const handleOpenDistribute = React.useCallback((idx) => {
         setDistributeIdx(idx);
-        setDistributeData({
-            ...distributeData,
+        setDistributeData(prev => ({
+            ...prev,
             returnRate: idx.currentReturnRate || 0
-        });
+        }));
         setIsDistributeOpen(true);
-    };
+    }, []);
 
-    const handleDistribute = async (e) => {
+    const handleDistribute = React.useCallback(async (e) => {
         e.preventDefault();
         if (!distributeIdx) return;
 
@@ -229,22 +229,22 @@ export default function IndicesManagementPage() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [distributeIdx, distributeData, distributeReturns, refetch]);
 
-    const stats = [
+    const stats = React.useMemo(() => [
         { title: "Active Indices", value: pagination?.total || 0, icon: Database, color: "text-white", bg: "bg-blue-600" },
         { title: "Avg Return", value: apiIndices.length ? `${(apiIndices.reduce((acc, curr) => acc + curr.currentReturnRate, 0) / apiIndices.length).toFixed(1)}%` : "—", icon: TrendingUp, color: "text-white", bg: "bg-green-600" },
         { title: "Asset Classes", value: [...new Set(apiIndices.map(i => i.category))].length || 0, icon: Layers, color: "text-white", bg: "bg-purple-600" },
         { title: "Visible", value: apiIndices.filter(i => i.isActive).length, icon: Activity, color: "text-white", bg: "bg-red-600" },
-    ];
+    ], [pagination, apiIndices]);
 
     const indicesData = apiIndices || [];
     const totalPages = pagination?.pages || 1;
 
-    const handleViewDetails = (idx) => {
+    const handleViewDetails = React.useCallback((idx) => {
         setSelectedIdx(idx);
         setIsSheetOpen(true);
-    };
+    }, []);
 
     return (
         <div className="space-y-6">

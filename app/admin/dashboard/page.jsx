@@ -14,16 +14,11 @@ import {
     MessageSquare,
     ArrowUpRight,
     ArrowDownRight,
-    Home,
-    ShieldCheck,
     RefreshCw,
     MoreHorizontal,
-    Eye,
     CheckCircle2,
     XCircle,
     AlertCircle,
-    Check,
-    X,
     Filter,
     Download
 } from "lucide-react";
@@ -33,12 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import {
     Table,
     TableBody,
@@ -47,15 +37,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-} from "@/components/ui/chart";
+
 import {
     Pie,
     PieChart,
-    Label,
     Cell,
     Area,
     AreaChart,
@@ -87,11 +72,11 @@ export default function AdminDashboardPage() {
 
     // 3. ACTION HANDLERS
     // Wraps the generic refetch function with visual loading cues
-    const handleRefresh = async () => {
+    const handleRefresh = React.useCallback(async () => {
         setIsRefreshing(true);
         await refetch();
         setIsRefreshing(false);
-    };
+    }, [refetch]);
 
     if (loading && !data) {
         return (
@@ -133,12 +118,12 @@ export default function AdminDashboardPage() {
     };
 
     // Format Data for Charts
-    const growthChartData = growth.map(g => ({
+    const growthChartData = React.useMemo(() => growth.map(g => ({
         month: g.month,
         users: g.users
-    }));
+    })), [growth]);
 
-    const recentActivity = activities.slice(0, 10).map(a => ({
+    const recentActivity = React.useMemo(() => activities.slice(0, 10).map(a => ({
         id: a.id,
         user: a.user,
         email: a.email,
@@ -147,9 +132,9 @@ export default function AdminDashboardPage() {
         status: a.status === 'success' ? 'approved' : a.status === 'failure' ? 'rejected' : 'pending',
         date: new Date(a.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         type: a.action
-    }));
+    })), [activities]);
 
-    const statsData = [
+    const statsData = React.useMemo(() => [
         {
             title: "Total Users",
             value: overview.totalUsers.toLocaleString(),
@@ -190,16 +175,16 @@ export default function AdminDashboardPage() {
             icon: Clock,
             color: "orange",
         },
-    ];
+    ], [overview, trends, pending]);
 
-    const pendingItems = [
+    const pendingItems = React.useMemo(() => [
         { icon: FileCheck, color: "text-orange-600", bg: "bg-orange-50", title: "KYC Pending", count: pending.kyc, href: "/admin/kyc" },
         { icon: CreditCard, color: "text-blue-600", bg: "bg-blue-50", title: "Payments", count: pending.payments, href: "/admin/payments" },
         { icon: Wallet, color: "text-purple-600", bg: "bg-purple-50", title: "Withdrawals", count: pending.withdrawals, href: "/admin/withdrawals" },
         { icon: MessageSquare, color: "text-pink-600", bg: "bg-pink-50", title: "Tickets", count: pending.tickets, href: "/admin/tickets" },
-    ];
+    ], [pending]);
 
-    const totalCalculated = distribution.reduce((acc, curr) => acc + curr.value, 0);
+    const totalCalculated = React.useMemo(() => distribution.reduce((acc, curr) => acc + curr.value, 0), [distribution]);
 
     return (
         <div className="space-y-4 p-1 max-w-[1600px] mx-auto">

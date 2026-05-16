@@ -66,7 +66,7 @@ function formatNumber(num) {
 }
 
 // KYC Status Badge with icons
-function KYCBadge({ status }) {
+const KYCBadge = React.memo(function KYCBadge({ status }) {
     if (status === "approved" || status === "verified") {
         return (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-medium whitespace-nowrap">
@@ -89,10 +89,10 @@ function KYCBadge({ status }) {
             Pending
         </Badge>
     );
-}
+});
 
 // Account Status Badge with icons
-function AccountStatusBadge({ isActive }) {
+const AccountStatusBadge = React.memo(function AccountStatusBadge({ isActive }) {
     if (isActive) {
         return (
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 font-medium whitespace-nowrap">
@@ -107,7 +107,7 @@ function AccountStatusBadge({ isActive }) {
             Blocked
         </Badge>
     );
-}
+});
 
 export default function AdminUsersPage() {
     // 1. FILTER & SEARCH STATE
@@ -146,7 +146,7 @@ export default function AdminUsersPage() {
         setMounted(true);
     }, []);
 
-    const startEditing = (user) => {
+    const startEditing = React.useCallback((user) => {
         setEditData({
             name: user.name,
             phone: user.phone,
@@ -154,9 +154,9 @@ export default function AdminUsersPage() {
             accumulationBonus: user.accumulationBonus || 0
         });
         setIsEditing(true);
-    };
+    }, []);
 
-    const handleUpdateProfile = async () => {
+    const handleUpdateProfile = React.useCallback(async () => {
         setIsSubmitting(true);
         try {
             await adminApi.updateUser(selectedUser._id, editData);
@@ -169,33 +169,33 @@ export default function AdminUsersPage() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [selectedUser, editData, refetch]);
 
     // Stats
-    const statsConfig = [
+    const statsConfig = React.useMemo(() => [
         { title: "Total Users", value: pagination?.total ?? 0, icon: Users, color: "text-white", bg: "bg-blue-600" },
         { title: "KYC Verified", value: pagination?.kycVerifiedTotal ?? 0, icon: CheckCircle, color: "text-white", bg: "bg-green-600" },
         { title: "Active Investors", value: pagination?.activeInvestorsTotal ?? 0, icon: TrendingUp, color: "text-white", bg: "bg-purple-600" },
         { title: "Blocked Accounts", value: pagination?.blockedTotal ?? 0, icon: XCircle, color: "text-white", bg: "bg-red-600" },
-    ];
+    ], [pagination]);
 
-    const handleSelectAll = (checked) => {
+    const handleSelectAll = React.useCallback((checked) => {
         if (checked) {
             setSelectedIds(apiUsers.map((u) => u._id));
         } else {
             setSelectedIds([]);
         }
-    };
+    }, [apiUsers]);
 
-    const handleSelect = (id, checked) => {
+    const handleSelect = React.useCallback((id, checked) => {
         if (checked) {
             setSelectedIds((prev) => [...prev, id]);
         } else {
             setSelectedIds((prev) => prev.filter((i) => i !== id));
         }
-    };
+    }, []);
 
-    const toggleUserStatus = async (user) => {
+    const toggleUserStatus = React.useCallback(async (user) => {
         try {
             const newStatus = !user.isActive;
             await adminApi.updateUser(user._id, { isActive: newStatus });
@@ -204,9 +204,9 @@ export default function AdminUsersPage() {
         } catch (err) {
             toast.error(err.message || 'Failed to update user status');
         }
-    };
+    }, [refetch]);
 
-    const handleDeleteUser = async (user) => {
+    const handleDeleteUser = React.useCallback(async (user) => {
         if (!confirm(`Are you sure you want to PERMANENTLY delete user "${user.name}"? This action cannot be undone and will remove all their investments, payments, and data.`)) {
             return;
         }
@@ -219,12 +219,12 @@ export default function AdminUsersPage() {
         } catch (err) {
             toast.error(err.message || "Failed to delete user");
         }
-    };
+    }, [refetch]);
 
-    const viewUserDetail = (user) => {
+    const viewUserDetail = React.useCallback((user) => {
         setSelectedUser(user);
         setDetailSheetOpen(true);
-    };
+    }, []);
 
     return (
         <div className="space-y-6">

@@ -46,36 +46,38 @@ import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 
 // Stats Card Component
-function StatsCard({ icon: Icon, iconColor, title, amount, subtext, trend, trendUp }) {
+const StatsCard = React.memo(function StatsCard({ icon: Icon, iconColor, title, amount, subtext, trend, trendUp }) {
     // Extract themes from color reference
-    const isGreen = iconColor.includes('green') || iconColor.includes('emerald');
-    const isPurple = iconColor.includes('purple') || iconColor.includes('violet');
-    const isAmber = iconColor.includes('amber') || iconColor.includes('orange');
-    const isBlue = iconColor.includes('blue');
-    
-    // Solid backgrounds matched to pill capsules from your screenshot
-    const pillBg = isGreen ? 'bg-[#10b981]' : 
-                   isPurple ? 'bg-[#7c3aed]' : 
-                   isAmber ? 'bg-[#f59e0b]' : 
-                   isBlue ? 'bg-[#2563eb]' : 'bg-slate-900';
+    const { pillBg, isGreen, isPurple, isAmber, isBlue } = React.useMemo(() => {
+        const isGreen = iconColor.includes('green') || iconColor.includes('emerald');
+        const isPurple = iconColor.includes('purple') || iconColor.includes('violet');
+        const isAmber = iconColor.includes('amber') || iconColor.includes('orange');
+        const isBlue = iconColor.includes('blue');
+        
+        const pillBg = isGreen ? 'bg-[#10b981]' : 
+                       isPurple ? 'bg-[#7c3aed]' : 
+                       isAmber ? 'bg-[#f59e0b]' : 
+                       isBlue ? 'bg-[#2563eb]' : 'bg-slate-900';
+                       
+        return { pillBg, isGreen, isPurple, isAmber, isBlue };
+    }, [iconColor]);
 
     // Mini Static SVG Line Paths that look like elegant stock charts
-    const sparklinePaths = [
+    const sparklinePaths = React.useMemo(() => [
         "M0 25C10 15 15 30 25 25C35 20 40 5 50 15C60 25 65 10 75 20C85 30 90 15 100 5",
         "M0 35C15 25 25 30 35 15C45 0 55 30 65 15C75 0 85 20 100 10",
         "M0 20C10 10 20 25 30 15C40 5 50 30 60 20C70 10 80 25 90 10C95 5 100 15 100 5"
-    ];
+    ], []);
     
     // Generate pseudo-symbol from Title (e.g. Total Invested -> TIN)
-    const generateSymbol = (str) => {
-        const parts = str.split(' ');
+    const symbol = React.useMemo(() => {
+        const parts = title.split(' ');
         if(parts.length > 1) return parts.map(p => p[0]).join('').toUpperCase().substring(0, 4);
-        return str.substring(0, 3).toUpperCase();
-    };
+        return title.substring(0, 3).toUpperCase();
+    }, [title]);
 
-    const symbol = generateSymbol(title);
     // Pick distinct static path based on title string code so it remains consistent
-    const path = sparklinePaths[title.charCodeAt(0) % sparklinePaths.length];
+    const path = React.useMemo(() => sparklinePaths[title.charCodeAt(0) % sparklinePaths.length], [title, sparklinePaths]);
     
     // Color for sparklines, default to green unless explicitly told it is down
     const sparklineStroke = (trendUp === false) ? "#ef4444" : "#22c55e";
@@ -116,7 +118,7 @@ function StatsCard({ icon: Icon, iconColor, title, amount, subtext, trend, trend
 
                     {/* Bottom Right: Handcrafted static sparkline for "Wow" Visual Aesthetics */}
                     <div className="w-20 h-10 mb-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
-                        <svg width="100%" height="100%" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="100%" height="100%" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <path 
                                 d={path} 
                                 stroke={sparklineStroke} 
@@ -131,10 +133,10 @@ function StatsCard({ icon: Icon, iconColor, title, amount, subtext, trend, trend
             </CardContent>
         </Card>
     );
-}
+});
 
 // Simple Bar Chart Component
-function ReturnsChart({ data }) {
+const ReturnsChart = React.memo(function ReturnsChart({ data }) {
     if (!data || data.length === 0) {
         return (
             <Card className="border-none shadow-sm h-full">
@@ -145,7 +147,7 @@ function ReturnsChart({ data }) {
         );
     }
 
-    const maxValue = Math.max(...data.map((d) => d.value));
+    const maxValue = React.useMemo(() => Math.max(...data.map((d) => d.value)), [data]);
 
     return (
         <Card className="border-none shadow-sm h-full">
@@ -162,15 +164,16 @@ function ReturnsChart({ data }) {
                 </div>
             </CardHeader>
             <CardContent className="pb-4">
-                <div className="flex items-end justify-between gap-1 h-28 mt-2">
+                <div className="flex items-end justify-between gap-1 h-28 mt-2" role="list">
                     {data.map((item, index) => (
-                        <div key={index} className="flex-1 flex flex-col items-center gap-2 group">
+                        <div key={index} className="flex-1 flex flex-col items-center gap-2 group" role="listitem">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div
                                             className="w-full max-w-[12px] bg-gradient-to-t from-primary to-primary/80 rounded-full transition-all duration-300 hover:scale-x-125 cursor-pointer"
                                             style={{ height: `${(item.value / maxValue) * 100}%` }}
+                                            aria-label={`Returns for ${item.week}: $${item.value.toLocaleString()}`}
                                         />
                                     </TooltipTrigger>
                                     <TooltipContent className="text-[10px] bg-popover text-popover-foreground border border-border py-1 px-2">
@@ -185,7 +188,7 @@ function ReturnsChart({ data }) {
             </CardContent>
         </Card>
     );
-}
+});
 
 export default function DashboardPage() {
     const { user, setUser } = useAuthStore();
@@ -230,7 +233,7 @@ export default function DashboardPage() {
     const pendingItems = dashboardData?.pendingItems || {};
     const recentInvestments = dashboardData?.recentInvestments || [];
 
-    const stats = [
+    const stats = React.useMemo(() => [
         {
             icon: Zap,
             iconColor: "bg-blue-600",
@@ -273,10 +276,10 @@ export default function DashboardPage() {
             subtext: `$${(summary.currentValue || 0).toLocaleString()} current value`,
             trend: null,
         },
-    ];
+    ], [summary]);
 
     // Transform recent investments for display
-    const investments = recentInvestments.map(inv => ({
+    const investments = React.useMemo(() => recentInvestments.map(inv => ({
         id: inv._id,
         name: inv.index?.name || 'Unknown Index',
         amount: `$${(inv.amount || 0).toLocaleString()}`,
@@ -284,7 +287,7 @@ export default function DashboardPage() {
         totalEarned: `$${(inv.totalReturns || 0).toLocaleString()}`,
         status: inv.status === 'active' ? 'Active' : inv.status === 'pending' ? 'Pending' : 'Completed',
         risk: inv.index?.riskLevel || 'medium',
-    }));
+    })), [recentInvestments]);
 
     // Dynamic chart data from API
     const chartData = dashboardData?.chartData || [];
@@ -363,14 +366,14 @@ export default function DashboardPage() {
             )}
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4" aria-label="Dashboard Statistics">
                 {stats.map((stat, index) => (
                     <StatsCard key={index} {...stat} />
                 ))}
-            </div>
+            </section>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-5">
+            <section className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-5" aria-label="Main Dashboard Content">
                 {/* Active Investments */}
                 <Card className="xl:col-span-2 border-none shadow-sm overflow-hidden">
                     <CardHeader className="bg-muted/50 border-b flex flex-row items-center justify-between py-2 md:py-3.5 px-4 md:px-6">
@@ -478,7 +481,7 @@ export default function DashboardPage() {
                     </Card>
                 </div>
 
-            </div>
+            </section>
         </div>
     );
 }

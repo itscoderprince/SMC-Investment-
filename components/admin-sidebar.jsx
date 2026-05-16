@@ -79,7 +79,7 @@ export function AdminSidebar({ ...props }) {
   const pending = dashboardData?.pending || {};
 
   // Navigation data
-  const navData = {
+  const navData = React.useMemo(() => ({
     main: [
       {
         title: "Dashboard",
@@ -152,7 +152,7 @@ export function AdminSidebar({ ...props }) {
         icon: Settings,
       },
     ],
-  };
+  }), [pending]);
 
   return (
     <Sidebar

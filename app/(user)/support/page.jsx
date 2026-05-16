@@ -67,28 +67,31 @@ function fmtShort(d) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.open;
     return (
         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${cfg.cls}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} aria-hidden="true" />
             {cfg.label}
         </span>
     );
-}
+});
 
 // ─── Ticket Row (List View) ───────────────────────────────────────────────────
 
-function TicketRow({ ticket, onView, isSelected }) {
+const TicketRow = React.memo(function TicketRow({ ticket, onView, isSelected }) {
     const cat = CATEGORIES[ticket.category] || CATEGORIES.other;
     const CatIcon = cat.icon;
     return (
         <div
             onClick={() => onView(ticket)}
             className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 cursor-pointer transition-all hover:bg-blue-50/40 group ${isSelected ? "bg-blue-50 border-l-2 border-l-blue-500" : "border-l-2 border-l-transparent"}`}
+            role="button"
+            tabIndex={0}
+            aria-selected={isSelected}
         >
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${cat.color}`}>
-                <CatIcon className="w-3.5 h-3.5" />
+                <CatIcon className="w-3.5 h-3.5" aria-hidden="true" />
             </div>
 
             <div className="flex-1 min-w-0">
@@ -107,26 +110,29 @@ function TicketRow({ ticket, onView, isSelected }) {
             <div className="flex items-center gap-2 shrink-0">
                 <StatusBadge status={ticket.status} />
                 <span className="text-[10px] text-gray-400 font-medium w-12 text-right">{fmtShort(ticket.createdAt)}</span>
-                <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-400 transition-colors" />
+                <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-400 transition-colors" aria-hidden="true" />
             </div>
         </div>
     );
-}
+});
 
 // ─── Ticket Card (Grid View) ──────────────────────────────────────────────────
 
-function TicketCard({ ticket, onView, isSelected }) {
+const TicketCard = React.memo(function TicketCard({ ticket, onView, isSelected }) {
     const cat = CATEGORIES[ticket.category] || CATEGORIES.other;
     const CatIcon = cat.icon;
     return (
         <div
             onClick={() => onView(ticket)}
             className={`bg-white rounded-xl border cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 group ${isSelected ? "border-blue-400 shadow-md shadow-blue-100" : "border-gray-100 shadow-sm"}`}
+            role="button"
+            tabIndex={0}
+            aria-selected={isSelected}
         >
             <div className="flex items-center justify-between px-3 pt-3 pb-2">
                 <div className="flex items-center gap-1.5">
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center ${cat.color}`}>
-                        <CatIcon className="w-3 h-3" />
+                        <CatIcon className="w-3 h-3" aria-hidden="true" />
                     </div>
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
                         #{ticket.ticketId?.slice(-6) || ticket.id?.slice(-6)}
@@ -142,11 +148,11 @@ function TicketCard({ ticket, onView, isSelected }) {
             </div>
         </div>
     );
-}
+});
 
 // ─── New Ticket Form ──────────────────────────────────────────────────────────
 
-function NewTicketPanel({ onClose, onSuccess }) {
+const NewTicketPanel = React.memo(function NewTicketPanel({ onClose, onSuccess }) {
     const [form, setForm] = useState({ subject: "", category: "", description: "", priority: "medium" });
     const [submitting, setSubmitting] = useState(false);
 
@@ -266,11 +272,11 @@ function NewTicketPanel({ onClose, onSuccess }) {
             </div>
         </div>
     );
-}
+});
 
 // ─── Ticket Detail Panel ──────────────────────────────────────────────────────
 
-function ConversationPanel({ ticketId, onClose }) {
+const ConversationPanel = React.memo(function ConversationPanel({ ticketId, onClose }) {
     const { ticket, loading, reply } = useTicket(ticketId);
     const [replyText, setReplyText] = useState("");
     const [sending, setSending] = useState(false);
@@ -418,7 +424,7 @@ function ConversationPanel({ ticketId, onClose }) {
             </div>
         </div>
     );
-}
+});
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -433,38 +439,38 @@ export default function SupportPage() {
 
     useEffect(() => { setMounted(true); }, []);
 
-    const stats = {
+    const stats = React.useMemo(() => ({
         open: (tickets || []).filter(t => t.status === "open").length,
         inProgress: (tickets || []).filter(t => t.status === "in-progress").length,
         waiting: (tickets || []).filter(t => t.status === "waiting").length,
         resolved: (tickets || []).filter(t => t.status === "resolved").length,
         closed: (tickets || []).filter(t => t.status === "closed").length,
         total: (tickets || []).length,
-    };
+    }), [tickets]);
 
-    const TABS = [
+    const TABS = React.useMemo(() => [
         { id: "all", label: "All", count: stats.total },
         { id: "open", label: "Open", count: stats.open },
         { id: "in-progress", label: "In Progress", count: stats.inProgress },
         { id: "waiting", label: "Waiting", count: stats.waiting },
         { id: "resolved", label: "Resolved", count: stats.resolved },
         { id: "closed", label: "Closed", count: stats.closed },
-    ];
+    ], [stats]);
 
-    const filtered = (tickets || []).filter(t => {
+    const filtered = React.useMemo(() => (tickets || []).filter(t => {
         if (!t) return false;
         const matchTab = activeTab === "all" || t.status === activeTab;
         const q = searchQuery.toLowerCase();
         const matchSearch = !q || t.subject?.toLowerCase().includes(q)
             || t.ticketId?.toLowerCase().includes(q);
         return matchTab && matchSearch;
-    });
+    }), [tickets, activeTab, searchQuery]);
 
-    const handleFormSuccess = () => {
+    const handleFormSuccess = React.useCallback(() => {
         setShowForm(false);
         setSelectedTicket(null);
         refetch();
-    };
+    }, [refetch]);
 
     if (!mounted) return (
         <div className="flex h-[80vh] items-center justify-center">

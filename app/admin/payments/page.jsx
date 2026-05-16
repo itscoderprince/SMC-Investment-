@@ -55,7 +55,7 @@ import { useAdminPayments } from "@/hooks/useApi";
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     if (status === "approved" || status === "verified") {
         return (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-medium py-0.5">
@@ -86,7 +86,7 @@ function StatusBadge({ status }) {
             {status === "proof_uploaded" ? "Processing" : "Expired"}
         </Badge>
     );
-}
+});
 
 export default function PaymentManagementPage() {
     const queryClient = useQueryClient();
@@ -116,19 +116,19 @@ export default function PaymentManagementPage() {
         setMounted(true);
     }, []);
 
-    const stats = [
+    const stats = React.useMemo(() => [
         { title: "Pending Request", value: pagination?.total || 0, icon: Clock, color: "text-white", bg: "bg-blue-600" },
         { title: "Verified Total", value: pagination?.verifiedTotal || 0, icon: CheckCircle, color: "text-white", bg: "bg-green-600" },
         { title: "Total Deposit", value: pagination?.totalAmount ? `$${pagination.totalAmount.toLocaleString()}` : "$0", icon: Wallet, color: "text-white", bg: "bg-purple-600" },
         { title: "Failed/Rejected", value: pagination?.rejectedTotal || 0, icon: XCircle, color: "text-white", bg: "bg-red-600" },
-    ];
+    ], [pagination]);
 
-    const handleViewDetails = (payment) => {
+    const handleViewDetails = React.useCallback((payment) => {
         setSelectedPayment(payment);
         setIsSheetOpen(true);
-    };
+    }, []);
 
-    const handleAction = async (id, status) => {
+    const handleAction = React.useCallback(async (id, status) => {
         setActionLoading(id);
         try {
             if (status === 'approved') {
@@ -155,7 +155,7 @@ export default function PaymentManagementPage() {
         } finally {
             setActionLoading(null);
         }
-    };
+    }, [selectedPayment, queryClient, refetch]);
 
     return (
         <div className="space-y-6">

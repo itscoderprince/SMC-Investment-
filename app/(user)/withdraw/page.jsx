@@ -80,24 +80,24 @@ export default function WithdrawPage() {
     const hasCryptoDetails = cryptoDetails.address.length >= 10 && cryptoDetails.network;
     const canSubmit = isValidAmount && hasCryptoDetails && !isSubmitting && kycStatus === 'approved';
 
-    const handleAmountChange = (e) => {
+    const handleAmountChange = React.useCallback((e) => {
         const value = e.target.value.replace(/[^0-9]/g, "");
         if (value) {
             setAmount(parseInt(value).toLocaleString());
         } else {
             setAmount("");
         }
-    };
+    }, []);
 
-    const handleWithdrawAll = () => {
+    const handleWithdrawAll = React.useCallback(() => {
         setAmount(availableBalance.toLocaleString());
-    };
+    }, [availableBalance]);
 
-    const handleCryptoChange = (field, value) => {
+    const handleCryptoChange = React.useCallback((field, value) => {
         setCryptoDetails((prev) => ({ ...prev, [field]: value }));
-    };
+    }, []);
 
-    const handleSubmit = async () => {
+    const handleSubmit = React.useCallback(async () => {
         if (!canSubmit) return;
         setIsSubmitting(true);
         setError(null);
@@ -122,7 +122,7 @@ export default function WithdrawPage() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [canSubmit, parsedAmount, cryptoDetails, refetchBalance, refetchWithdrawals, refreshUser]);
 
     if (balanceLoading) {
         return (

@@ -77,7 +77,7 @@ function initials(name) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.open;
     return (
         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${cfg.cls}`}>
@@ -85,9 +85,9 @@ function StatusBadge({ status }) {
             {cfg.label}
         </span>
     );
-}
+});
 
-function PriorityDot({ priority }) {
+const PriorityDot = React.memo(function PriorityDot({ priority }) {
     const cfg = PRIORITY_CONFIG[priority];
     if (!cfg) return null;
     return (
@@ -95,11 +95,11 @@ function PriorityDot({ priority }) {
             {cfg.label}
         </span>
     );
-}
+});
 
 // ─── Ticket Row (List View) ───────────────────────────────────────────────────
 
-function TicketRow({ ticket, onView, isSelected }) {
+const TicketRow = React.memo(function TicketRow({ ticket, onView, isSelected }) {
     const cat = CATEGORIES[ticket.category] || CATEGORIES.other;
     const CatIcon = cat.icon;
     return (
@@ -135,11 +135,11 @@ function TicketRow({ ticket, onView, isSelected }) {
             </div>
         </div>
     );
-}
+});
 
 // ─── Ticket Card (Grid View) ──────────────────────────────────────────────────
 
-function TicketCard({ ticket, onView, isSelected }) {
+const TicketCard = React.memo(function TicketCard({ ticket, onView, isSelected }) {
     const cat = CATEGORIES[ticket.category] || CATEGORIES.other;
     const CatIcon = cat.icon;
     return (
@@ -184,7 +184,7 @@ function TicketCard({ ticket, onView, isSelected }) {
             </div>
         </div>
     );
-}
+});
 
 // ─── Ticket Detail Panel ──────────────────────────────────────────────────────
 
@@ -193,7 +193,7 @@ function TicketPanel({ ticketId, onClose }) {
     const [replyText, setReplyText] = useState("");
     const [sending, setSending] = useState(false);
 
-    const handleSend = async () => {
+    const handleSend = React.useCallback(async () => {
         if (!replyText.trim()) return;
         setSending(true);
         try {
@@ -205,16 +205,16 @@ function TicketPanel({ ticketId, onClose }) {
         } finally {
             setSending(false);
         }
-    };
+    }, [replyText, reply]);
 
-    const handleUpdate = async (data) => {
+    const handleUpdate = React.useCallback(async (data) => {
         try {
             await update(data);
             toast.success("Ticket updated");
         } catch (e) {
             toast.error("Failed to update ticket");
         }
-    };
+    }, [update]);
 
     if (loading && !ticket) {
         return (
@@ -382,25 +382,25 @@ export default function AdminTicketsPage() {
 
     useEffect(() => { setMounted(true); }, []);
 
-    const stats = {
+    const stats = React.useMemo(() => ({
         open: apiStats?.open || 0,
         inProgress: apiStats?.["in-progress"] || 0,
         waiting: apiStats?.waiting || 0,
         resolved: apiStats?.resolved || 0,
         closed: apiStats?.closed || 0,
         total: apiStats?.total || 0,
-    };
+    }), [apiStats]);
 
-    const TABS = [
+    const TABS = React.useMemo(() => [
         { id: "all", label: "All", count: stats.total },
         { id: "open", label: "Open", count: stats.open },
         { id: "in-progress", label: "In Progress", count: stats.inProgress },
         { id: "waiting", label: "Waiting", count: stats.waiting },
         { id: "resolved", label: "Resolved", count: stats.resolved },
         { id: "closed", label: "Closed", count: stats.closed },
-    ];
+    ], [stats]);
 
-    const filtered = (tickets || []).filter(t => {
+    const filtered = React.useMemo(() => (tickets || []).filter(t => {
         if (!t) return false;
         const matchTab = activeTab === "all" || t.status === activeTab;
         const matchPriority = priorityFilter === "all" || t.priority === priorityFilter;
@@ -409,7 +409,7 @@ export default function AdminTicketsPage() {
             || t.user?.name?.toLowerCase().includes(q)
             || t.ticketId?.toLowerCase().includes(q);
         return matchTab && matchPriority && matchSearch;
-    });
+    }), [tickets, activeTab, priorityFilter, searchQuery]);
 
     if (!mounted) return (
         <div className="flex h-[80vh] items-center justify-center">

@@ -45,15 +45,17 @@ export default function AdminLayout({ children }) {
     const { data: dashboardData } = useAdminDashboard();
     const [mounted, setMounted] = React.useState(false);
 
-    const segments = pathname?.split('/').filter(Boolean) || [];
+    const segments = React.useMemo(() => pathname?.split('/').filter(Boolean) || [], [pathname]);
 
-    const handleLogout = async () => {
+    const handleLogout = React.useCallback(async () => {
         await logoutAction();
         router.push("/");
-    };
+    }, [logoutAction, router]);
 
     const pending = dashboardData?.pending || {};
-    const notificationCount = (pending.kyc || 0) + (pending.payments || 0) + (pending.withdrawals || 0) + (pending.tickets || 0);
+    const notificationCount = React.useMemo(() => 
+        (pending.kyc || 0) + (pending.payments || 0) + (pending.withdrawals || 0) + (pending.tickets || 0),
+    [pending]);
 
     React.useEffect(() => {
         setMounted(true);

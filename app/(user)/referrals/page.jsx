@@ -32,29 +32,29 @@ export default function ReferralsPage() {
     const [copied, setCopied] = useState(false);
     const [codeCopied, setCodeCopied] = useState(false);
 
-    const handleCopyLink = () => {
+    const handleCopyLink = React.useCallback(() => {
         if (!referralData?.referralCode) return;
         const link = `${window.location.origin}/register?ref=${referralData.referralCode}`;
         navigator.clipboard.writeText(link);
         setCopied(true);
         toast.success("Referral link copied!");
         setTimeout(() => setCopied(false), 2000);
-    };
+    }, [referralData]);
 
-    const handleCopyCode = () => {
+    const handleCopyCode = React.useCallback(() => {
         if (!referralData?.referralCode) return;
         navigator.clipboard.writeText(referralData.referralCode);
         setCodeCopied(true);
         toast.success("Referral code copied!");
         setTimeout(() => setCodeCopied(false), 2000);
-    };
+    }, [referralData]);
 
-    const handleWhatsAppShare = () => {
+    const handleWhatsAppShare = React.useCallback(() => {
         if (!referralData?.referralCode) return;
         const link = `${window.location.origin}/register?ref=${referralData.referralCode}`;
         const text = `Hey! Join SMC Protocol and start growing your wealth. Use my referral link to get started: ${link}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    };
+    }, [referralData]);
 
     if (loading) {
         return (

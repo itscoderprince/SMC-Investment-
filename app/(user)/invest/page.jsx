@@ -91,16 +91,16 @@ function InvestContent() {
         }
     }, [indices, indexIdFromUrl]);
 
-    const handleAmountChange = (e) => {
+    const handleAmountChange = React.useCallback((e) => {
         const value = e.target.value.replace(/[^0-9]/g, "");
         if (value) {
             setAmount(parseInt(value).toLocaleString());
         } else {
             setAmount("");
         }
-    };
+    }, []);
 
-    const handleSubmit = async () => {
+    const handleSubmit = React.useCallback(async () => {
         if (!selectedIndex || !amount) return;
 
         setIsSubmitting(true);
@@ -128,16 +128,16 @@ function InvestContent() {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [selectedIndex, amount, paymentMethod, router]);
 
-    const resetForm = () => {
+    const resetForm = React.useCallback(() => {
         setSelectedIndex(null);
         setAmount("");
         setAgreeTerms(false);
         setError(null);
         setDialogOpen(false);
         setPaymentMethod("bep20_usdt");
-    };
+    }, []);
 
     if (indicesLoading) {
         return (
@@ -164,12 +164,12 @@ function InvestContent() {
     const isValidAmount = parsedAmount >= currentMin;
 
     // Define branding mapping for variety
-    const cardConfig = [
+    const cardConfig = React.useMemo(() => [
         { grad: "from-blue-600 to-indigo-600", lightGrad: "bg-blue-50/50", icon: Globe2, iconCol: "text-blue-600" },
         { grad: "from-emerald-600 to-teal-600", lightGrad: "bg-emerald-50/50", icon: TrendingUp, iconCol: "text-emerald-600" },
         { grad: "from-violet-600 to-fuchsia-600", lightGrad: "bg-violet-50/50", icon: Cpu, iconCol: "text-violet-600" },
         { grad: "from-amber-600 to-orange-600", lightGrad: "bg-amber-50/50", icon: Target, iconCol: "text-amber-600" },
-    ];
+    ], []);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -228,7 +228,7 @@ function InvestContent() {
                     <p className="text-sm font-bold text-slate-400">No active instruments available at this synchronization block.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Available Markets">
                     {indices.map((idx, i) => {
                         const cfg = cardConfig[i % cardConfig.length];
                         const IconEl = cfg.icon;
@@ -420,7 +420,7 @@ function InvestContent() {
                             </motion.div>
                         );
                     })}
-                </div>
+                </section>
             )}
         </div>
     );

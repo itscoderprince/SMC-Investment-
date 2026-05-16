@@ -57,7 +57,7 @@ import { useAdminKYC } from "@/hooks/useApi";
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-function StatusBadge({ status }) {
+const StatusBadge = React.memo(function StatusBadge({ status }) {
     if (status === "approved" || status === "verified") {
         return (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1 font-medium py-0.5 whitespace-nowrap">
@@ -80,7 +80,7 @@ function StatusBadge({ status }) {
             Pending
         </Badge>
     );
-}
+});
 
 export default function KYCManagementPage() {
     const queryClient = useQueryClient();
@@ -107,19 +107,19 @@ export default function KYCManagementPage() {
         setMounted(true);
     }, []);
 
-    const stats = [
+    const stats = React.useMemo(() => [
         { title: "Total Pending", value: pagination?.pendingTotal || 0, icon: Clock, color: "text-white", bg: "bg-blue-600" },
         { title: "Verified Today", value: pagination?.verifiedTodayTotal || 0, icon: CheckCircle, color: "text-white", bg: "bg-green-600" },
         { title: "Total Requests", value: pagination?.total || 0, icon: Shield, color: "text-white", bg: "bg-purple-600" },
         { title: "Rejections", value: pagination?.rejectedTotal || 0, icon: XCircle, color: "text-white", bg: "bg-red-600" },
-    ];
+    ], [pagination]);
 
-    const handleViewDetails = (kyc) => {
+    const handleViewDetails = React.useCallback((kyc) => {
         setSelectedKyc(kyc);
         setIsSheetOpen(true);
-    };
+    }, []);
 
-    const handleApprove = async (id) => {
+    const handleApprove = React.useCallback(async (id) => {
         setActionLoading(id);
         try {
             await adminApi.approveKYC(id);
@@ -139,9 +139,9 @@ export default function KYCManagementPage() {
         } finally {
             setActionLoading(null);
         }
-    };
+    }, [selectedKyc, queryClient, refetch]);
 
-    const handleReject = async (id) => {
+    const handleReject = React.useCallback(async (id) => {
         const reason = prompt("Please enter a reason for rejection:");
         if (reason === null) return;
         if (!reason.trim()) {
@@ -168,7 +168,7 @@ export default function KYCManagementPage() {
         } finally {
             setActionLoading(null);
         }
-    };
+    }, [selectedKyc, queryClient, refetch]);
 
     return (
         <div className="space-y-6">

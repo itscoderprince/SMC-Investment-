@@ -117,17 +117,17 @@ export default function UserLayout({ children }) {
   ]);
   const [mounted, setMounted] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = React.useCallback(async () => {
     await logoutAction();
     router.push("/");
-  };
+  }, [logoutAction, router]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setMounted(true);
     refreshUser().catch(console.error);
   }, [refreshUser]);
 
-  const getBreadcrumbs = () => {
+  const { parent, current } = React.useMemo(() => {
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length === 0) return { parent: "Home", current: "" };
 
@@ -152,9 +152,7 @@ export default function UserLayout({ children }) {
       parent: "Home",
       current: first.charAt(0).toUpperCase() + first.slice(1),
     };
-  };
-
-  const { parent, current } = getBreadcrumbs();
+  }, [pathname]);
 
   return (
     <SidebarProvider>
