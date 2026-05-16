@@ -33,7 +33,9 @@ export async function GET(request) {
             recentActivities,
             activeUsersLastMonth,
             investmentStatsLastMonth,
-            returnsStatsLastMonth
+            returnsStatsLastMonth,
+            indexDistribution,
+            userGrowth
         ] = await Promise.all([
             User.countDocuments({ role: 'user' }),
             User.countDocuments({ role: 'user', isActive: true }),
@@ -84,6 +86,44 @@ export async function GET(request) {
                         totalReturnsDistributed: { $sum: '$weeklyReturns.returnAmount' }
                     }
                 }
+            ]),
+            Investment.aggregate([
+                { $match: { isActive: true } },
+                {
+                    $group: {
+                        _id: '$indexId',
+                        totalAmount: { $sum: '$amount' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'indices',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'indexInfo'
+                    }
+                },
+                { $unwind: '$indexInfo' },
+                {
+                    $project: {
+                        name: '$indexInfo.name',
+                        value: '$totalAmount',
+                        color: '$indexInfo.color'
+                    }
+                }
+            ]),
+            User.aggregate([
+                { $match: { role: 'user', createdAt: { $gte: new Date(new Date().setMonth(new Date().getMonth() - 5, 1)) } } },
+                {
+                    $group: {
+                        _id: {
+                            month: { $month: '$createdAt' },
+                            year: { $year: '$createdAt' }
+                        },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { '_id.year': 1, '_id.month': 1 } }
             ])
         ]);
 
@@ -103,33 +143,6 @@ export async function GET(request) {
         const returnsTrend = calculateTrend(stats.totalReturns, returnsLastMonth);
 
 
-        // Get investment distribution by index
-        const indexDistribution = await Investment.aggregate([
-            { $match: { isActive: true } },
-            {
-                $group: {
-                    _id: '$indexId',
-                    totalAmount: { $sum: '$amount' }
-                }
-            },
-            {
-                $lookup: {
-                    from: 'indices',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'indexInfo'
-                }
-            },
-            { $unwind: '$indexInfo' },
-            {
-                $project: {
-                    name: '$indexInfo.name',
-                    value: '$totalAmount',
-                    color: '$indexInfo.color'
-                }
-            }
-        ]);
-
         // Calculate distribution percentages
         const totalAmount = indexDistribution.reduce((acc, curr) => acc + curr.value, 0);
         const distribution = indexDistribution.map(item => ({
@@ -137,26 +150,6 @@ export async function GET(request) {
             value: totalAmount > 0 ? Math.round((item.value / totalAmount) * 100) : 0,
             color: item.color || '#2563eb'
         }));
-
-        // Get user growth (last 6 months)
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-        sixMonthsAgo.setDate(1);
-        sixMonthsAgo.setHours(0, 0, 0, 0);
-
-        const userGrowth = await User.aggregate([
-            { $match: { role: 'user', createdAt: { $gte: sixMonthsAgo } } },
-            {
-                $group: {
-                    _id: {
-                        month: { $month: '$createdAt' },
-                        year: { $year: '$createdAt' }
-                    },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { '_id.year': 1, '_id.month': 1 } }
-        ]);
 
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const growthData = [];

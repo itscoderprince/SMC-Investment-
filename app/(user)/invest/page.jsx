@@ -139,6 +139,14 @@ function InvestContent() {
         setPaymentMethod("bep20_usdt");
     }, []);
 
+    // Define branding mapping for variety
+    const cardConfig = React.useMemo(() => [
+        { grad: "from-blue-600 to-indigo-600", lightGrad: "bg-blue-50/50", icon: Globe2, iconCol: "text-blue-600" },
+        { grad: "from-emerald-600 to-teal-600", lightGrad: "bg-emerald-50/50", icon: TrendingUp, iconCol: "text-emerald-600" },
+        { grad: "from-violet-600 to-fuchsia-600", lightGrad: "bg-violet-50/50", icon: Cpu, iconCol: "text-violet-600" },
+        { grad: "from-amber-600 to-orange-600", lightGrad: "bg-amber-50/50", icon: Target, iconCol: "text-amber-600" },
+    ], []);
+
     if (indicesLoading) {
         return (
             <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
@@ -162,14 +170,6 @@ function InvestContent() {
     const currentMin = selectedIndex?.minInvestment || 0;
     const parsedAmount = parseInt(amount.replace(/,/g, "")) || 0;
     const isValidAmount = parsedAmount >= currentMin;
-
-    // Define branding mapping for variety
-    const cardConfig = React.useMemo(() => [
-        { grad: "from-blue-600 to-indigo-600", lightGrad: "bg-blue-50/50", icon: Globe2, iconCol: "text-blue-600" },
-        { grad: "from-emerald-600 to-teal-600", lightGrad: "bg-emerald-50/50", icon: TrendingUp, iconCol: "text-emerald-600" },
-        { grad: "from-violet-600 to-fuchsia-600", lightGrad: "bg-violet-50/50", icon: Cpu, iconCol: "text-violet-600" },
-        { grad: "from-amber-600 to-orange-600", lightGrad: "bg-amber-50/50", icon: Target, iconCol: "text-amber-600" },
-    ], []);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-12">

@@ -46,45 +46,38 @@ export async function GET(request) {
             query.isActive = false;
         }
 
-        // Get total count
-        const total = await User.countDocuments(query);
-
-        // Get stats
-        const [totalVerified, totalBlocked, activeInvestorIds] = await Promise.all([
-            User.countDocuments({ ...query, kycStatus: 'approved' }), // Apply query to filter by search/role if needed, but stats usually cover all
-            User.countDocuments({ ...query, isActive: false }),
-            Investment.distinct('userId', { isActive: true })
-        ]);
-
-        // If the query has specific filters (like search), the global stats might need to respect that or be global. 
-        // Typically dashboard stats are global or scoped to the current view. 
-        // Given the UI layout, these look like global stats for the "Users Management" section.
-        // So I will calculate them globally (respecting the role filter if not master_admin).
-
+        // Get users, totals, and global stats concurrently
         const globalQuery = {};
         if (auth.user.role !== 'master_admin') {
             globalQuery.role = 'user';
         }
 
-        const [kycVerifiedTotal, blockedTotal, globalActiveInvestorIds] = await Promise.all([
+        const [
+            total,
+            kycVerifiedTotal,
+            blockedTotal,
+            globalActiveInvestorIds,
+            users
+        ] = await Promise.all([
+            User.countDocuments(query),
             User.countDocuments({ ...globalQuery, kycStatus: 'approved' }),
             User.countDocuments({ ...globalQuery, isActive: false }),
-            Investment.distinct('userId', { isActive: true })
+            Investment.distinct('userId', { isActive: true }),
+            User.find(query)
+                .select('-password -refreshToken')
+                .sort({ createdAt: -1 })
+                .skip((pagination.page - 1) * pagination.limit)
+                .limit(pagination.limit)
+                .lean()
         ]);
 
-        // Get users
+        // Get investments for users (batch fetch to fix N+1 problem)
+        const userIds = users.map(u => u._id);
+        const allInvestments = await Investment.find({ userId: { $in: userIds }, isActive: true }).lean();
 
-        const users = await User.find(query)
-            .select('-password -refreshToken')
-            .sort({ createdAt: -1 })
-            .skip((pagination.page - 1) * pagination.limit)
-            .limit(pagination.limit)
-            .lean();
-
-        // Get investments for each user
-        const userStats = await Promise.all(users.map(async (user) => {
-            const investments = await Investment.find({ userId: user._id, isActive: true });
-            const totalInvested = investments.reduce((sum, inv) => sum + inv.amount, 0);
+        const userStats = users.map(user => {
+            const userInvestments = allInvestments.filter(inv => String(inv.userId) === String(user._id));
+            const totalInvested = userInvestments.reduce((sum, inv) => sum + inv.amount, 0);
             return {
                 id: user._id,
                 _id: user._id, // Keep both for compatibility
@@ -99,9 +92,9 @@ export async function GET(request) {
                 createdAt: user.createdAt,
                 totalInvested,
                 accumulationBonus: user.accumulationBonus || 0,
-                activeInvestments: investments.length
+                activeInvestments: userInvestments.length
             };
-        }));
+        });
 
         return successResponse({
             users: userStats,

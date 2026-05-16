@@ -30,13 +30,14 @@ export async function GET(request) {
             ];
         }
 
-        const total = await Index.countDocuments(query);
-
-        const indices = await Index.find(query)
-            .sort({ sortOrder: 1, name: 1 })
-            .skip((pagination.page - 1) * pagination.limit)
-            .limit(pagination.limit)
-            .lean();
+        const [total, indices] = await Promise.all([
+            Index.countDocuments(query),
+            Index.find(query)
+                .sort({ sortOrder: 1, name: 1 })
+                .skip((pagination.page - 1) * pagination.limit)
+                .limit(pagination.limit)
+                .lean()
+        ]);
 
         return successResponse({
             indices: indices.map(i => ({

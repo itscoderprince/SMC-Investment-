@@ -78,49 +78,49 @@ export async function GET(request) {
             }
         }
 
-        const total = await Investment.countDocuments(query);
-
-        const investments = await Investment.find(query)
-            .populate('userId', 'name email')
-            .populate('indexId', 'name slug color')
-            .sort({ createdAt: -1 })
-            .skip((pagination.page - 1) * pagination.limit)
-            .limit(pagination.limit)
-            .lean();
-
-        // Calculate Stats
-        // 1. Total Active Amount
-        const activeStats = await Investment.aggregate([
-            { $match: { status: 'active' } },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]);
-        const totalActiveAmount = activeStats[0]?.total || 0;
-
-        // 2. Total Investors (unique users with active investments)
-        const investorStats = await Investment.distinct('userId', { status: 'active' });
-        const totalInvestors = investorStats.length;
-
-        // 3. Pending Exits (completed status)
-        const pendingExits = await Investment.countDocuments({ status: 'completed' });
-
-        // 4. Today's Profit (returns distributed today)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const todayReturns = await Investment.aggregate([
-            { $unwind: '$weeklyReturns' },
-            {
-                $match: {
-                    'weeklyReturns.creditedAt': { $gte: today }
+        const [
+            total,
+            investments,
+            activeStats,
+            investorStats,
+            pendingExits,
+            todayReturns
+        ] = await Promise.all([
+            Investment.countDocuments(query),
+            Investment.find(query)
+                .populate('userId', 'name email')
+                .populate('indexId', 'name slug color')
+                .sort({ createdAt: -1 })
+                .skip((pagination.page - 1) * pagination.limit)
+                .limit(pagination.limit)
+                .lean(),
+            Investment.aggregate([
+                { $match: { status: 'active' } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Investment.distinct('userId', { status: 'active' }),
+            Investment.countDocuments({ status: 'completed' }),
+            Investment.aggregate([
+                { $unwind: '$weeklyReturns' },
+                {
+                    $match: {
+                        'weeklyReturns.creditedAt': { $gte: today }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: '$weeklyReturns.returnAmount' }
+                    }
                 }
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: '$weeklyReturns.returnAmount' }
-                }
-            }
+            ])
         ]);
+
+        const totalActiveAmount = activeStats[0]?.total || 0;
+        const totalInvestors = investorStats.length;
         const todayProfit = todayReturns[0]?.total || 0;
 
         const stats = {

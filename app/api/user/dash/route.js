@@ -24,38 +24,55 @@ export async function GET(request) {
         const { user } = auth;
         const userId = user._id;
 
-        // Get active investment summary
-        const investmentSummary = await Investment.getUserTotalInvestment(userId);
-        const activeInvestments = await Investment.countDocuments({ userId, isActive: true });
-
-        // Get lifetime totals for balance calculation
-        const totalLifetimeReturns = await Investment.getUserTotalReturns(userId);
-        const totalWithdrawn = await Withdrawal.getUserTotalWithdrawn(userId);
-        const totalLifetimePrincipal = await Investment.getUserTotalPrincipal(userId);
-
-        // Get pending items
-        const pendingPayments = await PaymentRequest.countDocuments({
-            userId,
-            status: { $in: ['pending', 'proof_uploaded'] }
-        });
-        const pendingWithdrawals = await Withdrawal.countDocuments({
-            userId,
-            status: 'pending'
-        });
-        const openTickets = await Ticket.countDocuments({
-            userId,
-            status: { $in: ['open', 'in-progress'] }
-        });
-
-        // Get KYC status
-        const kyc = await KYC.findOne({ userId }).select('status submittedAt');
-
-        // Get recent investments
-        const recentInvestments = await Investment.find({ userId, isActive: true })
-            .populate('indexId', 'name slug color riskLevel')
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .lean();
+        // Fetch all independent dashboard data concurrently
+        const [
+            investmentSummary,
+            activeInvestments,
+            totalLifetimeReturns,
+            totalWithdrawn,
+            totalLifetimePrincipal,
+            pendingPayments,
+            pendingWithdrawals,
+            openTickets,
+            kyc,
+            recentInvestments,
+            chartData
+        ] = await Promise.all([
+            Investment.getUserTotalInvestment(userId),
+            Investment.countDocuments({ userId, isActive: true }),
+            Investment.getUserTotalReturns(userId),
+            Withdrawal.getUserTotalWithdrawn(userId),
+            Investment.getUserTotalPrincipal(userId),
+            PaymentRequest.countDocuments({ userId, status: { $in: ['pending', 'proof_uploaded'] } }),
+            Withdrawal.countDocuments({ userId, status: 'pending' }),
+            Ticket.countDocuments({ userId, status: { $in: ['open', 'in-progress'] } }),
+            KYC.findOne({ userId }).select('status submittedAt').lean(),
+            Investment.find({ userId, isActive: true })
+                .populate('indexId', 'name slug color riskLevel')
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .lean(),
+            Investment.aggregate([
+                { $match: { userId: userId, 'weeklyReturns.0': { $exists: true } } },
+                { $unwind: '$weeklyReturns' },
+                {
+                    $group: {
+                        _id: { $week: '$weeklyReturns.creditedAt' },
+                        total: { $sum: '$weeklyReturns.returnAmount' },
+                        date: { $first: '$weeklyReturns.creditedAt' }
+                    }
+                },
+                { $sort: { '_id': 1 } },
+                { $limit: 12 },
+                {
+                    $project: {
+                        _id: 0,
+                        week: { $concat: ['W', { $toString: '$_id' }] },
+                        value: '$total'
+                    }
+                }
+            ])
+        ]);
 
         // Calculate available balance (lifetime returns + referral bonus + accumulation bonus - lifetime withdrawals)
         const bonus = user.accumulationBonus || 0;
@@ -111,26 +128,7 @@ export async function GET(request) {
                 status: inv.status,
                 activatedAt: inv.activatedAt
             })),
-            chartData: await Investment.aggregate([
-                { $match: { userId: userId, 'weeklyReturns.0': { $exists: true } } },
-                { $unwind: '$weeklyReturns' },
-                {
-                    $group: {
-                        _id: { $week: '$weeklyReturns.creditedAt' },
-                        total: { $sum: '$weeklyReturns.returnAmount' },
-                        date: { $first: '$weeklyReturns.creditedAt' }
-                    }
-                },
-                { $sort: { '_id': 1 } },
-                { $limit: 12 },
-                {
-                    $project: {
-                        _id: 0,
-                        week: { $concat: ['W', { $toString: '$_id' }] },
-                        value: '$total'
-                    }
-                }
-            ])
+            chartData: chartData
         }, 'Dashboard data retrieved');
 
 
